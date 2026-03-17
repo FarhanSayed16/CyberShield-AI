@@ -1,0 +1,80 @@
+@startuml CyberSentinel_Data_Model
+
+' ===== Light Professional Theme / Palette =====
+!define BG_LIGHT #FFFFFF
+!define FG_TEXT #111827
+!define PRIMARY #2563EB
+!define ACCENT2 #F97316
+!define BORDER_SOFT #CBD5E1
+
+skinparam backgroundColor BG_LIGHT
+skinparam shadowing true
+skinparam roundcorner 12
+
+skinparam class {
+  BackgroundColor #F9FAFB
+  BorderColor PRIMARY
+  FontColor FG_TEXT
+}
+skinparam package {
+  BackgroundColor #F9FAFB
+  BorderColor ACCENT2
+  FontColor FG_TEXT
+}
+
+title
+<COLOR PRIMARY>CyberSentinel AI – Threat Event Data Model</COLOR>
+end title
+
+package "MongoDB Atlas" #F3F4F6 {
+
+  class ThreatEvent {
+    +ObjectId id
+    +string type              ' url | text | prompt
+    +string source            ' extension | dashboard
+    +string raw_input_snippet
+    +string threat_type       ' phishing | malicious_url | prompt_injection | benign
+    +int    risk_score        ' 0–100
+    +string threat_level      ' Safe | Suspicious | High Risk
+    +float  confidence        ' 0.0–1.0
+    +datetime created_at
+  }
+
+  class Indicators {
+    +ObjectId id
+    +ObjectId threat_event_id
+    +string   label           ' e.g. "urgency language"
+    +string   category        ' url_pattern | language | domain_reputation
+  }
+
+  class ExternalFlags {
+    +ObjectId id
+    +ObjectId threat_event_id
+    +string safe_browsing     ' SAFE | PHISHING | MALWARE | UNKNOWN
+    +int    virustotal_positives
+    +int    virustotal_total_engines
+    +string domain_age        ' e.g. "<30 days"
+  }
+
+  class Explanation {
+    +ObjectId id
+    +ObjectId threat_event_id
+    +string   summary_text
+    +string[] key_points
+  }
+
+  class Recommendations {
+    +ObjectId id
+    +ObjectId threat_event_id
+    +string   severity_label  ' Informational | Warning | Critical
+    +string[] actions
+  }
+}
+
+ThreatEvent "1" -- "0..*" Indicators
+ThreatEvent "1" -- "0..1" ExternalFlags
+ThreatEvent "1" -- "0..1" Explanation
+ThreatEvent "1" -- "0..1" Recommendations
+
+@enduml
+

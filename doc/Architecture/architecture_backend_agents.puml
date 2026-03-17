@@ -1,0 +1,95 @@
+@startuml CyberSentinel_Backend_Agents
+
+' ===== Light Professional Theme / Palette =====
+!define BG_LIGHT #FFFFFF
+!define FG_TEXT #111827
+!define PRIMARY #2563EB
+!define ACCENT1 #16A34A
+!define ACCENT2 #F97316
+!define BORDER_SOFT #CBD5E1
+
+skinparam backgroundColor BG_LIGHT
+skinparam shadowing true
+skinparam roundcorner 12
+
+skinparam rectangle {
+  BackgroundColor #F9FAFB
+  BorderColor PRIMARY
+  FontColor FG_TEXT
+}
+skinparam package {
+  BackgroundColor #F9FAFB
+  BorderColor BORDER_SOFT
+  FontColor FG_TEXT
+}
+skinparam database {
+  BackgroundColor #F9FAFB
+  BorderColor ACCENT2
+  FontColor FG_TEXT
+}
+
+title
+<COLOR PRIMARY>CyberSentinel AI – Backend & AI Agents</COLOR>
+end title
+
+package "FastAPI Backend" <<Node>> #F3F4F6 {
+  rectangle "API Gateway\n(routers/api.py)" as APIGW
+  rectangle "Input Validator\n(Pydantic Models)" as Validator
+  rectangle "Threat Router\n(type‑based dispatch)" as Router
+
+  package "Detection Services" #F9FAFB {
+    rectangle "Phishing Detection\nService" as PhishSvc
+    rectangle "URL Analysis\nService" as UrlSvc
+    rectangle "Prompt Injection\nService" as PromptSvc
+  }
+
+  package "AI Agent Clients\n(Gemini / Google AI Studio)" #F9FAFB {
+    rectangle "Phishing Detection\nAgent Client" as APhish
+    rectangle "URL Risk\nAgent Client" as AUrl
+    rectangle "Prompt Injection\nAgent Client" as APrompt
+    rectangle "Threat Explanation\nAgent Client" as AExplain
+    rectangle "Recommendation\nAgent Client" as AReco
+  }
+
+  package "Security Integrations" #F9FAFB {
+    rectangle "Google Safe Browsing\nClient" as SafeClient
+    rectangle "VirusTotal\nClient" as VTClient
+    rectangle "WHOIS / Domain Info\nClient (optional)" as WhoisClient
+  }
+
+  rectangle "Risk Scoring\n& Fusion Engine" as RiskEngine
+  rectangle "Recommendation\nComposer" as RecoComposer
+}
+
+database "MongoDB Atlas\n(threat_events, stats)" as MDB
+
+' --- Internal flows ---
+APIGW --> Validator : Validate &\nNormalize Request
+Validator --> Router : ThreatRequest
+
+Router --> PhishSvc : type = text/email
+Router --> UrlSvc   : type = url
+Router --> PromptSvc: type = prompt
+
+' Detection services ⇄ AI agents
+PhishSvc --> APhish
+UrlSvc   --> AUrl
+PromptSvc--> APrompt
+
+' URL‑specific external signals
+UrlSvc --> SafeClient : URL Reputation
+UrlSvc --> VTClient   : URL Scan
+UrlSvc --> WhoisClient: Domain Age\n(optional)
+
+PhishSvc --> RiskEngine
+UrlSvc   --> RiskEngine
+PromptSvc--> RiskEngine
+
+RiskEngine --> RecoComposer : Final Score,\nThreat Level
+RecoComposer --> MDB : Store threat_event\n(document)
+RecoComposer --> APIGW : Structured Response\n(threat, score,\nexplanation, actions)
+
+APIGW --> MDB : Read Threats\n& Stats for UI
+
+@enduml
+

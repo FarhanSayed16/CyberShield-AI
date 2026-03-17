@@ -1,0 +1,41 @@
+{
+  "model_name": "BernoulliNB (tuned) on Enron_Email",
+  "tfidf_vocab_size": 390,
+  "signal_features": [
+    "msg_len",
+    "word_count",
+    "digit_ratio",
+    "upper_ratio",
+    "has_url",
+    "has_phone",
+    "has_currency",
+    "exclaim_count",
+    "question_count",
+    "punct_ratio",
+    "lexical_diversity",
+    "avg_word_len",
+    "has_shortcode",
+    "caps_word_count",
+    "unique_words",
+    "upper_count",
+    "digit_count",
+    "char_count"
+  ],
+  "metrics": {
+    "test_f1": 1.0,
+    "model_name": "BernoulliNB (tuned) on Enron_Email"
+  },
+  "config": {
+    "random_state": "42",
+    "test_size": "0.2",
+    "val_size": "0.1",
+    "cv_folds": "5",
+    "optuna_trials": "30",
+    "primary_metric": "f1",
+    "tfidf_max_features": "5000",
+    "tfidf_ngram_range": "(1, 2)",
+    "save_dir": "/content/spam_pipeline_output",
+    "model_save_path": "/content/spam_pipeline_output/best_model.pkl"
+  },
+  "saved_at": "2026-03-16T13:26:07.054200"
+}

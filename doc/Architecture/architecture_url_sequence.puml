@@ -1,0 +1,67 @@
+@startuml CyberSentinel_URL_Sequence
+
+' ===== Light Professional Theme / Palette =====
+!define BG_LIGHT #FFFFFF
+!define FG_TEXT #111827
+!define PRIMARY #2563EB
+!define BORDER_SOFT #CBD5E1
+
+skinparam backgroundColor BG_LIGHT
+skinparam shadowing true
+
+skinparam sequence {
+  ArrowColor PRIMARY
+  LifeLineBackgroundColor #FFFFFF
+  LifeLineBorderColor BORDER_SOFT
+  ParticipantBackgroundColor #F9FAFB
+  ParticipantBorderColor PRIMARY
+  ParticipantFontColor FG_TEXT
+}
+
+title
+<COLOR PRIMARY>URL Threat Analysis – End‑to‑End Flow</COLOR>
+end title
+
+actor User
+participant "Browser\n(Tab)" as Browser
+participant "Chrome Extension\n(Content + Background)" as Ext
+participant "FastAPI\nAPI Gateway" as APIGW
+participant "Threat Router" as Router
+participant "URL Analysis\nService" as UrlSvc
+participant "Gemini URL\nAgent" as AUrl
+participant "Google Safe\nBrowsing API" as Safe
+participant "VirusTotal\nAPI" as VT
+participant "Risk Scoring\nEngine" as Risk
+database "MongoDB\nAtlas" as MDB
+participant "React Dashboard /\nAssistant" as FE
+
+User -> Browser : Open suspicious URL
+Browser -> Ext : Current URL\npage metadata
+User -> Ext : Click "Scan page"\n(popup / context menu)
+
+Ext -> APIGW : POST /api/analyze\n{ type: "url", content: "<url>" }
+APIGW -> Router : Build ThreatRequest\nfrom payload
+Router -> UrlSvc : Analyze URL\nThreatRequest
+
+UrlSvc -> AUrl : Call Gemini URL Agent\n(JSON in/out)
+UrlSvc -> Safe : Check URL reputation
+UrlSvc -> VT   : Query URL report
+
+AUrl --> UrlSvc : url_risk_score,\nindicators
+Safe --> UrlSvc : flag: SAFE/PHISHING/\nMALWARE
+VT   --> UrlSvc : positives / engines,\ncategory
+
+UrlSvc -> Risk : Aggregate signals\n(LLM + APIs + heuristics)
+Risk --> UrlSvc : final_score,\nthreat_level
+
+UrlSvc -> MDB : Insert threat_event\ndocument
+UrlSvc --> APIGW : Structured Result\n(threat, score,\nexplanation, actions)
+
+APIGW --> Ext : Compact result\n(Safe / Suspicious / High)
+APIGW --> FE  : Detailed result\n(for dashboard)
+
+Ext -> User : Badge / popup alert
+FE  -> User : Detailed view:\nExplanation + actions
+
+@enduml
+

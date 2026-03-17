@@ -1,0 +1,45 @@
+{
+  "model_name": "RandomForest (tuned) on UCI_Phishing",
+  "feature_names": [
+    "having_IP_Address",
+    "having_Sub_Domain",
+    "SSLfinal_State",
+    "Domain_registeration_length",
+    "Favicon",
+    "port",
+    "HTTPS_token",
+    "Request_URL",
+    "URL_of_Anchor",
+    "Links_in_tags",
+    "SFH",
+    "Submitting_to_email",
+    "Abnormal_URL",
+    "Redirect",
+    "on_mouseover",
+    "RightClick",
+    "popUpWidnow",
+    "Iframe",
+    "age_of_domain",
+    "DNSRecord",
+    "web_traffic",
+    "Page_Rank",
+    "Google_Index",
+    "Links_pointing_to_page",
+    "Statistical_report"
+  ],
+  "metrics": {
+    "test_f1": 0.9508,
+    "model_name": "RandomForest (tuned) on UCI_Phishing"
+  },
+  "config": {
+    "random_state": 42,
+    "test_size": 0.2,
+    "val_size": 0.1,
+    "cv_folds": 5,
+    "optuna_trials": 30,
+    "primary_metric": "f1",
+    "save_dir": "/content/ml_pipeline_output",
+    "model_save_path": "/content/ml_pipeline_output/best_model.pkl"
+  },
+  "saved_at": "2026-03-16T11:56:48.985647"
+}

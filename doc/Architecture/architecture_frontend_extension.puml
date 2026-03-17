@@ -1,0 +1,63 @@
+@startuml CyberSentinel_Frontend_Extension
+
+' ===== Light Professional Theme / Palette =====
+!define BG_LIGHT #FFFFFF
+!define FG_TEXT #111827
+!define PRIMARY #2563EB
+!define ACCENT1 #16A34A
+!define BORDER_SOFT #CBD5E1
+
+skinparam backgroundColor BG_LIGHT
+skinparam shadowing true
+skinparam roundcorner 12
+
+skinparam rectangle {
+  BackgroundColor #F9FAFB
+  BorderColor PRIMARY
+  FontColor FG_TEXT
+}
+skinparam package {
+  BackgroundColor #F9FAFB
+  BorderColor BORDER_SOFT
+  FontColor FG_TEXT
+}
+
+title
+<COLOR PRIMARY>CyberSentinel AI – Frontend & Browser Extension</COLOR>
+end title
+
+package "React Dashboard (Vite + Tailwind)" #F3F4F6 {
+  rectangle "Scan View\n(URL / Text / Prompt)" as ScanView
+  rectangle "Threat History\nTable" as HistoryView
+  rectangle "Analytics & Charts\n(Recharts / Chart.js)" as AnalyticsView
+  rectangle "Threat Detail\n& Explainability Panel" as DetailView
+  rectangle "Floating CyberSentinel\nAssistant Widget" as AssistantWidget
+}
+
+package "Chrome Extension\n(Manifest V3)" #F3F4F6 {
+  rectangle "Background Script\n(event routing)" as BgScript
+  rectangle "Content Script\n(page integration)" as ContentScript
+  rectangle "Popup UI\n(status + quick scan)" as PopupUI
+  rectangle "Context Menu\n('Scan with CyberSentinel')" as CtxMenu
+}
+
+rectangle "FastAPI API\n(https://backend/...)" as BackendApi
+
+' --- React dashboard flows ---
+ScanView --> BackendApi : POST /api/analyze\n(JSON payload)
+HistoryView --> BackendApi : GET /api/threats
+AnalyticsView --> BackendApi : GET /api/stats
+DetailView --> BackendApi : GET /api/threats/{id}
+AssistantWidget --> BackendApi : GET latest\nrisk status
+
+' --- Extension flows ---
+ContentScript --> BgScript : URL, selected text,\nprompt snippets
+CtxMenu --> BgScript : User action\n("Scan selection")
+PopupUI --> BgScript : User action\n("Scan this page")
+
+BgScript --> BackendApi : POST /api/analyze\n(type=url/text/prompt)
+BackendApi --> PopupUI : Compact result\n(Safe / Suspicious / High)
+BackendApi --> ContentScript : Optional inline\npage highlight
+
+@enduml
+

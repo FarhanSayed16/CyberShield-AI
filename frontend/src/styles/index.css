@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Global Styles & Themes ===== */
+/* ===== Global Styles & Themes ===== */
+:root {
+  --color-bg: 248 250 252;
+  --color-surface: 241 245 249;
+  --color-card: 255 255 255;
+  --color-border: 226 232 240;
+  --color-text-primary: 15 23 42;
+  --color-text-secondary: 100 116 139;
+}
+
+.dark {
+  --color-bg: 15 23 42;
+  --color-surface: 22 32 50;
+  --color-card: 30 41 59;
+  --color-border: 51 65 85;
+  --color-text-primary: 241 245 249;
+  --color-text-secondary: 148 163 184;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-text-primary));
+  @apply font-sans antialiased;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-theme-bg;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-theme-border rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-theme-text-secondary;
+}
+
+/* ===== Glass Card ===== */
+.glass-card {
+  @apply bg-theme-card/80 backdrop-blur-xl border border-theme-border rounded-2xl;
+}
+
+/* ===== Risk Colors ===== */
+.risk-safe { color: #10B981; }
+.risk-low { color: #3B82F6; }
+.risk-suspicious { color: #F59E0B; }
+.risk-high { color: #EF4444; }
+
+.risk-bg-safe { background-color: rgba(16, 185, 129, 0.15); }
+.risk-bg-low { background-color: rgba(59, 130, 246, 0.15); }
+.risk-bg-suspicious { background-color: rgba(245, 158, 11, 0.15); }
+.risk-bg-high { background-color: rgba(239, 68, 68, 0.15); }
+
+/* ===== Animations ===== */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1E293B 25%, #334155 50%, #1E293B 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ===== Gauge Animation ===== */
+.gauge-fill {
+  transition: stroke-dashoffset 1s ease-in-out;
+}

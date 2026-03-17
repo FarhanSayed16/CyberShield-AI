@@ -1,0 +1,47 @@
+{
+  "model_name": "Xception",
+  "architecture": "XceptionDetector",
+  "metrics": {
+    "test_f1": 1.0,
+    "model_name": "Xception"
+  },
+  "img_size": 224,
+  "normalisation": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "classes": {
+    "0": "Real",
+    "1": "Fake"
+  },
+  "config": {
+    "img_size": "224",
+    "img_size_efficient": "380",
+    "batch_size": "32",
+    "num_workers": "2",
+    "random_seed": "42",
+    "epochs": "15",
+    "learning_rate": "0.0001",
+    "weight_decay": "0.0001",
+    "scheduler": "cosine",
+    "early_stopping": "5",
+    "test_size": "0.2",
+    "val_size": "0.1",
+    "optuna_trials": "15",
+    "cv_folds": "3",
+    "n_real_per_ds": "1000",
+    "n_fake_per_ds": "1000",
+    "data_dir": "/content/deepfake_data",
+    "save_dir": "/content/deepfake_output",
+    "model_save_path": "/content/deepfake_output/best_model.pth"
+  },
+  "saved_at": "2026-03-16T20:15:09.967851"
+}

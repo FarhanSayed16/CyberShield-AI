@@ -1,0 +1,102 @@
+@startuml CyberSentinel_Context
+
+' ===== Light Professional Theme / Palette =====
+!define BG_LIGHT #FFFFFF
+!define FG_TEXT #111827
+!define PRIMARY #2563EB
+!define ACCENT1 #16A34A
+!define ACCENT2 #F97316
+!define ACCENT3 #7C3AED
+!define BORDER_SOFT #CBD5E1
+
+skinparam backgroundColor BG_LIGHT
+skinparam shadowing true
+skinparam roundcorner 12
+
+skinparam defaultTextAlignment center
+
+skinparam rectangle {
+  BackgroundColor #F9FAFB
+  BorderColor PRIMARY
+  FontColor FG_TEXT
+}
+skinparam actor {
+  BackgroundColor #EFF6FF
+  BorderColor ACCENT3
+  FontColor FG_TEXT
+}
+skinparam cloud {
+  BackgroundColor #F9FAFB
+  BorderColor ACCENT1
+  FontColor FG_TEXT
+}
+skinparam database {
+  BackgroundColor #F9FAFB
+  BorderColor ACCENT2
+  FontColor FG_TEXT
+}
+skinparam node {
+  BackgroundColor #F9FAFB
+  BorderColor PRIMARY
+  FontColor FG_TEXT
+}
+
+title
+<COLOR PRIMARY>CyberSentinel AI – System Context</COLOR>
+end title
+
+actor "End User" as User
+
+node "User Environment" as UserEnv {
+  rectangle "Web Browser\n(Chrome / Edge)" as Browser
+  rectangle "Other Apps\n(Email / Chat)" as OtherApps
+}
+
+cloud "CyberSentinel Client Layer" as Client {
+  rectangle "React Dashboard\n(Vite + Tailwind)" as Dashboard
+  rectangle "Floating\nSecurity Assistant" as Assistant
+  rectangle "Chrome Extension\n(Manifest V3)" as Extension
+}
+
+cloud "CyberSentinel Backend Layer\nFastAPI (Python)" as Backend {
+  node "API Gateway\n/ Orchestrator" as APIGW
+  node "AI Agent Router" as AgentRouter
+}
+
+cloud "AI & Security Intelligence" as Intelligence {
+  rectangle "Gemini‑based\nAI Agents" as Gemini
+  rectangle "Google Safe Browsing\nAPI" as SafeBrowsing
+  rectangle "VirusTotal\nAPI" as VirusTotal
+  rectangle "WHOIS / Domain Info\n(Optional)" as Whois
+}
+
+database "MongoDB Atlas\nThreat Logs & Analytics" as Mongo
+
+' --- Interactions ---
+User --> Browser : Browsing,\nMessages, Prompts
+User --> Dashboard : Manual Scans,\nThreat Review
+
+Browser -[hidden]-> Extension
+Dashboard -[hidden]-> Assistant
+
+Browser -[PRIMARY]-> Extension : URL,\nSelected Text,\nPrompts
+Extension -[PRIMARY]-> APIGW : REST /api/analyze\n(JSON)
+
+Dashboard -[PRIMARY]-> APIGW : REST /api/analyze,\n/api/threats,/api/stats
+
+APIGW -[PRIMARY]-> AgentRouter : Normalized\nThreat Request
+AgentRouter -[ACCENT1]-> Gemini : Phishing / URL /\nPrompt Detection
+AgentRouter -[ACCENT1]-> SafeBrowsing : URL Reputation
+AgentRouter -[ACCENT1]-> VirusTotal : URL Scan
+AgentRouter -[ACCENT1]-> Whois : Domain Age\n(if enabled)
+
+AgentRouter -[ACCENT2]-> Mongo : Persist Logs\n& Stats
+Mongo -[PRIMARY]-> Dashboard : Threat History,\nAnalytics
+
+APIGW -[PRIMARY]-> Dashboard : Final Decision,\nRisk Score, Explanation
+APIGW -[PRIMARY]-> Extension : Compact Result\n(Safe / Suspicious / High)
+
+Dashboard -[ACCENT3]-> Assistant : Current Risk Level\n& Alerts
+
+@enduml
+
