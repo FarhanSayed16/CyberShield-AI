@@ -33,24 +33,41 @@ def evaluate_tier_1_basic(text: str) -> dict:
     return {"flagged": False, "score": 0}
 
 
-# === TIER 2: MODERATE (Local HF) ===
+# === TIER 2: MODERATE (Local HF Pipeline or Remote HF Space) ===
 async def evaluate_tier_2_moderate(text: str) -> dict:
-    if not ai_manager.prompt_pipe:
-        return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
-        
-    try:
-        hf_result = await asyncio.to_thread(ai_manager.prompt_pipe, text)
-        if hf_result:
-            label = str(hf_result[0]['label']).upper()
-            score = float(hf_result[0]['score'])
-            is_injection = "INJECTION" in label or "1" in label
-            return {
-                "confidence": score,
-                "label": "INJECTION" if is_injection else "SAFE",
-                "hf_score": (score * 100) if is_injection else ((1.0 - score) * 100)
-            }
-    except Exception as e:
-        logger.error(f"HF Tier 2 Error: {e}")
+    if ai_manager.prompt_pipe:
+        try:
+            hf_result = await asyncio.to_thread(ai_manager.prompt_pipe, text)
+            if hf_result:
+                label = str(hf_result[0]['label']).upper()
+                score = float(hf_result[0]['score'])
+                is_injection = "INJECTION" in label or "1" in label
+                return {
+                    "confidence": score,
+                    "label": "INJECTION" if is_injection else "SAFE",
+                    "hf_score": (score * 100) if is_injection else ((1.0 - score) * 100)
+                }
+        except Exception as e:
+            logger.error(f"HF Tier 2 Error: {e}")
+            
+    elif settings.HF_SPACE_URL:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                api_url = f"{settings.HF_SPACE_URL.rstrip('/')}/predict/prompt"
+                res = await client.post(api_url, json={"text": text})
+                res.raise_for_status()
+                data = res.json()
+                is_injection = data.get("is_injection", False)
+                score = float(data.get("score", 0.0))
+                return {
+                    "confidence": 0.8,
+                    "label": "INJECTION" if is_injection else "SAFE",
+                    "hf_score": score
+                }
+        except Exception as e:
+            logger.warning(f"Remote HF Space Prompt Error: {e}")
+            
     return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
 
 

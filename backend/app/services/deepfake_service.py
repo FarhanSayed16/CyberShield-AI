@@ -64,29 +64,47 @@ async def evaluate_tier_1_basic(decoded_bytes: bytes, media_type: str) -> dict:
         return {"flagged": False, "score": 0.0}
 
 
-# === TIER 2: MODERATE (Local HF) ===
+# === TIER 2: MODERATE (Local HF or Remote HF Space) ===
 async def evaluate_tier_2_moderate(decoded_bytes: bytes, media_type: str) -> dict:
-    if not ai_manager.deepfake_pipe or media_type != "image":
-        return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
-        
-    try:
-        img = Image.open(io.BytesIO(decoded_bytes)).convert("RGB")
-        target_size = (224, 224)
-        if img.size[0] > 1000 or img.size[1] > 1000:
-             img.thumbnail(target_size)
-             
-        hf_result = await asyncio.to_thread(ai_manager.deepfake_pipe, img)
-        if hf_result:
-            label = str(hf_result[0]['label']).upper()
-            score = float(hf_result[0]['score'])
-            is_fake = "FAKE" in label or "1" in label or "ARTIFICIAL" in label
-            return {
-                "confidence": score,
-                "label": "DEEPFAKE" if is_fake else "REAL",
-                "hf_score": (score * 100) if is_fake else ((1.0 - score) * 100)
-            }
-    except Exception as e:
-        logger.error(f"HF Tier 2 Vision Error: {e}")
+    if ai_manager.deepfake_pipe and media_type == "image":
+        try:
+            img = Image.open(io.BytesIO(decoded_bytes)).convert("RGB")
+            target_size = (224, 224)
+            if img.size[0] > 1000 or img.size[1] > 1000:
+                 img.thumbnail(target_size)
+                 
+            hf_result = await asyncio.to_thread(ai_manager.deepfake_pipe, img)
+            if hf_result:
+                label = str(hf_result[0]['label']).upper()
+                score = float(hf_result[0]['score'])
+                is_fake = "FAKE" in label or "1" in label or "ARTIFICIAL" in label
+                return {
+                    "confidence": score,
+                    "label": "DEEPFAKE" if is_fake else "REAL",
+                    "hf_score": (score * 100) if is_fake else ((1.0 - score) * 100)
+                }
+        except Exception as e:
+            logger.error(f"HF Tier 2 Vision Error: {e}")
+            
+    elif settings.HF_SPACE_URL and media_type == "image":
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                api_url = f"{settings.HF_SPACE_URL.rstrip('/')}/predict/deepfake"
+                files = {'file': ('image.jpg', decoded_bytes, 'image/jpeg')}
+                res = await client.post(api_url, files=files)
+                res.raise_for_status()
+                data = res.json()
+                is_fake = data.get("is_deepfake", False)
+                score = float(data.get("risk_score", 0.0))
+                return {
+                    "confidence": 0.8,
+                    "label": "DEEPFAKE" if is_fake else "REAL",
+                    "hf_score": score
+                }
+        except Exception as e:
+            logger.warning(f"Remote HF Space Deepfake Error (endpoint might not exist yet): {e}")
+
     return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
 
 
