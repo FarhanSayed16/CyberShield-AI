@@ -22,7 +22,6 @@ class Settings(BaseSettings):
     SAFEPROMPT_API_KEY: str = ""
     HIVE_AI_API_KEY: str = ""
     NVIDIA_API_KEY: str = "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"
-    HF_SPACE_URL: str = "https://dreko69-cybersentinel-engine.hf.space"
 
     # Security
     API_KEY: str = "dev-key"

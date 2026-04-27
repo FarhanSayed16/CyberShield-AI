@@ -1,33 +1,25 @@
 import asyncio
 from loguru import logger
+from transformers import pipeline
+import torch
+import joblib
 import os
 import sys
+from sklearn.base import BaseEstimator, TransformerMixin
 
-# Wrap ML imports so the app can start securely on 512MB RAM without these modules
-try:
-    from transformers import pipeline
-    import torch
-    import joblib
-    from sklearn.base import BaseEstimator, TransformerMixin
+# Mock the custom classes so joblib can unpickle the preprocessors
+class PhishingPreprocessor(BaseEstimator, TransformerMixin): pass
+class URLFeatureExtractor(BaseEstimator, TransformerMixin): pass
+class SpamPreprocessor(BaseEstimator, TransformerMixin): pass
+class TextCleaner(BaseEstimator, TransformerMixin): pass
+class SignalFeatureExtractor(BaseEstimator, TransformerMixin): pass
 
-    # Mock the custom classes so joblib can unpickle the preprocessors
-    class PhishingPreprocessor(BaseEstimator, TransformerMixin): pass
-    class URLFeatureExtractor(BaseEstimator, TransformerMixin): pass
-    class SpamPreprocessor(BaseEstimator, TransformerMixin): pass
-    class TextCleaner(BaseEstimator, TransformerMixin): pass
-    class SignalFeatureExtractor(BaseEstimator, TransformerMixin): pass
-
-    import __main__
-    __main__.PhishingPreprocessor = PhishingPreprocessor
-    __main__.URLFeatureExtractor = URLFeatureExtractor
-    __main__.SpamPreprocessor = SpamPreprocessor
-    __main__.TextCleaner = TextCleaner
-    __main__.SignalFeatureExtractor = SignalFeatureExtractor
-    
-    ML_MODULES_LOADED = True
-except ImportError:
-    logger.warning("Local ML modules (torch, transformers, sklearn) are missing. Bypassing local HF models.")
-    ML_MODULES_LOADED = False
+import __main__
+__main__.PhishingPreprocessor = PhishingPreprocessor
+__main__.URLFeatureExtractor = URLFeatureExtractor
+__main__.SpamPreprocessor = SpamPreprocessor
+__main__.TextCleaner = TextCleaner
+__main__.SignalFeatureExtractor = SignalFeatureExtractor
 
 class AIModelManager:
     def __init__(self):
@@ -50,10 +42,6 @@ class AIModelManager:
         Synchronously load Hugging Face transformer pipelines.
         Downloads model weights (around 1-2GB) on the very first run.
         """
-        if not ML_MODULES_LOADED:
-            logger.warning("Skipping local AI model loading (missing dependencies). Inference will route to external HF Space.")
-            return
-            
         logger.info("Loading local Hugging Face pipelines... This runs on CPU/GPU depending on torch availability.")
         
         device = 0 if torch.cuda.is_available() else -1
