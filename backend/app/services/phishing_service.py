@@ -74,45 +74,28 @@ def evaluate_tier_1_basic(text: str) -> dict:
         return {"flagged": False, "score": 0}
 
 
-# === TIER 2: MODERATE (Local HuggingFace Pipeline or Remote HF Space) ===
+# === TIER 2: MODERATE (Local HuggingFace Pipeline) ===
 async def evaluate_tier_2_moderate(text: str) -> dict:
     """
-    Tier 2: Run the specialized local Hugging Face transformer pipeline, or route to remote HF Space.
+    Tier 2: Run the specialized local Hugging Face transformer pipeline asynchronously.
     """
-    if ai_manager.phishing_pipe:
-        try:
-            hf_result = await asyncio.to_thread(ai_manager.phishing_pipe, text)
-            if hf_result:
-                label = str(hf_result[0]['label']).upper()
-                score = float(hf_result[0]['score'])
-                is_phish = "PHISH" in label or "1" in label or "MALICIOUS" in label
-                return {
-                    "confidence": score,
-                    "label": "PHISHING" if is_phish else "SAFE",
-                    "hf_score": (score * 100) if is_phish else ((1.0 - score) * 100)
-                }
-        except Exception as e:
-            logger.error(f"HF Tier 2 Error: {e}")
-            
-    elif settings.HF_SPACE_URL:
-        import httpx
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                api_url = f"{settings.HF_SPACE_URL.rstrip('/')}/predict/text"
-                res = await client.post(api_url, json={"text": text})
-                res.raise_for_status()
-                data = res.json()
-                is_phish = data.get("is_phishing", False)
-                score = float(data.get("risk_score", 0.0))
-                return {
-                    "confidence": 0.8,
-                    "label": "PHISHING" if is_phish else "SAFE",
-                    "hf_score": score
-                }
-        except Exception as e:
-            logger.warning(f"Remote HF Space Phishing Error: {e}")
-            
-    return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
+    if not ai_manager.phishing_pipe:
+        return {"confidence": 0.0, "label": "SAFE"}
+        
+    try:
+        hf_result = await asyncio.to_thread(ai_manager.phishing_pipe, text)
+        if hf_result:
+            label = str(hf_result[0]['label']).upper()
+            score = float(hf_result[0]['score'])
+            is_phish = "PHISH" in label or "1" in label or "MALICIOUS" in label
+            return {
+                "confidence": score,
+                "label": "PHISHING" if is_phish else "SAFE",
+                "hf_score": (score * 100) if is_phish else ((1.0 - score) * 100)
+            }
+    except Exception as e:
+        logger.error(f"HF Tier 2 Error: {e}")
+    return {"confidence": 0.0, "label": "SAFE"}
 
 
 # === TIER 3: ADVANCED (Gemini LLM) ===
