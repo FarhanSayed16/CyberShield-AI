@@ -29,4 +29,10 @@ uvicorn==0.42.0
 watchfiles==1.1.1
 websockets==16.0
 win32_setctime==1.2.0
+scikit-learn
+joblib
 tldextract
+torch
+torchvision
+transformers
+Pillow
