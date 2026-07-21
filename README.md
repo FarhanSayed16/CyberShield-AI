@@ -1,252 +1,276 @@
+<div align="center">
+
+<img src="frontend/public/logo.png" alt="CyberSentinel" width="160" />
+
 # CyberSentinel
 
-<p align="center">
-  <img src="frontend/public/logo.png" alt="CyberSentinel Logo" width="140" />
-</p>
+### Explainable AI-Powered Cyber Defense Platform
 
-<p align="center">
-  <strong>Explainable AI-Powered Cyber Defense Platform</strong><br />
-  Detect · Analyze · Explain · Remediate
-</p>
+**Detect · Analyze · Explain · Remediate**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/status-active-0F766E?style=flat-square" alt="Status" />
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
-  <img src="https://img.shields.io/badge/FastAPI-0.135-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/MongoDB-Atlas%20%7C%20Local-47A248?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB" />
-  <img src="https://img.shields.io/badge/Extension-Manifest%20V3-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension" />
-</p>
+[![Status](https://img.shields.io/badge/Status-Active-0F766E?style=for-the-badge)](https://github.com/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com)
+[![Chrome](https://img.shields.io/badge/Extension-Manifest%20V3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/)
+
+[**Live Demo**](#quick-start) · [**Download Extension**](#-browser-extension) · [**Documentation**](#-documentation) · [**Deploy**](#-deployment)
+
+</div>
 
 ---
 
-## Table of Contents
+## 🔍 What is CyberSentinel?
 
-- [Overview](#overview)
-- [Product Preview](#product-preview)
-- [Core Features](#core-features)
-- [Architecture](#architecture)
-- [Technology Stack](#technology-stack)
-- [Repository Structure](#repository-structure)
-- [Quick Start](#quick-start)
-- [Environment Configuration](#environment-configuration)
-- [API Overview](#api-overview)
-- [Browser Extension](#browser-extension)
-- [Deployment](#deployment)
-- [Documentation](#documentation)
-- [Core Developers](#core-developers)
-- [License](#license)
+**CyberSentinel** is a full-stack, explainable cyber defense platform that protects users across the browser and an operator console. Unlike traditional security tools that return a single "safe/unsafe" verdict, CyberSentinel provides **indicators, plain-language explanations, and recommended actions** — making every decision transparent and actionable.
 
----
+> 💡 **Key Differentiator:** Every analysis returns a consistent explainability contract:
+> `risk_score` · `threat_level` · `indicators` · `explanation` · `recommended_actions`
 
-## Overview
+### What it detects
 
-**CyberSentinel** (CyberShield AI) is an explainable cyber defense platform that protects users across the browser and an operator console. It analyzes **phishing**, **malicious URLs**, **prompt injection**, **synthetic media (deepfakes)**, and related threats using a **multi-tier detection pipeline**—then returns not only a risk score, but **indicators, plain-language explanations, and recommended actions**.
-
-| Surface | Role |
+| Threat Type | Description |
 | :--- | :--- |
-| **Landing + Operator Console** | Marketing site and full dashboard for scan, history, analytics, email, audit, and rules |
-| **Browser Extension** | Real-time Quickball / Action Center on every page |
-| **FastAPI Backend** | Analyze, threats, stats, chat, report, rules, and intel APIs |
-| **MongoDB** | Persistent threat event history |
-| **Gemini (Tier 3)** | Structured explainability and assistant chat |
+| 🔗 **Phishing & Malicious URLs** | Lookalike domains, credential harvest patterns, urgency language |
+| 🧠 **Prompt Injection** | Jailbreaks, system-prompt leaks, embedded payloads |
+| 🎭 **Deepfake / Synthetic Media** | Image authenticity signals and visual artifacts |
+| 📧 **Email & Message Threats** | Domain mismatch, suspicious phrases, embedded malicious links |
 
 ---
 
-## Product Preview
+## 📸 Product Preview
 
-### Landing page
-
+<details>
+<summary><strong>🖥️ Landing Page</strong> — Click to expand</summary>
+<br />
 <p align="center">
   <img src="frontend/public/Preview_images/01-landing-hero.png" alt="CyberSentinel Landing Page" width="900" />
 </p>
-
 <p align="center"><em>Brand-first landing experience with explainable analysis mock and product CTAs</em></p>
+</details>
 
-### Operator console — Live scan
-
+<details>
+<summary><strong>📊 Operator Console — Live Scan</strong> — Click to expand</summary>
+<br />
 <p align="center">
   <img src="frontend/public/Preview_images/02-dashboard-scan.png" alt="Live Scan Dashboard" width="900" />
 </p>
-
 <p align="center"><em>Threat Analyzer with URL / text / prompt / deepfake inputs and engine tier selection</em></p>
+</details>
 
-### Threat history
-
+<details>
+<summary><strong>📜 Threat History</strong> — Click to expand</summary>
+<br />
 <p align="center">
   <img src="frontend/public/Preview_images/03-threat-history.png" alt="Threat History" width="900" />
 </p>
-
 <p align="center"><em>Filterable event log with risk scores, levels, compare mode, and CSV export</em></p>
+</details>
 
-### Security analytics
-
+<details>
+<summary><strong>📈 Security Analytics</strong> — Click to expand</summary>
+<br />
 <p align="center">
   <img src="frontend/public/Preview_images/04-analytics.png" alt="Security Analytics" width="900" />
 </p>
-
 <p align="center"><em>KPI cards and attack timeline for operational visibility</em></p>
+</details>
 
-### Browser extension — Action Center
-
+<details>
+<summary><strong>🧩 Browser Extension — Action Center</strong> — Click to expand</summary>
+<br />
 <p align="center">
   <img src="frontend/public/Preview_images/05-extension-action-center.png" alt="Extension Action Center" width="420" />
   &nbsp;&nbsp;
   <img src="frontend/public/Preview_images/06-extension-results.png" alt="Extension Analysis Results" width="420" />
 </p>
-
 <p align="center"><em>In-page Action Center: tier selection, URL/text scan, deepfake upload, live detection, and explainable results</em></p>
+</details>
 
 ---
 
-## Core Features
+## ⚙️ Multi-Tier Detection Engine
 
-### Multi-tier detection engine
+CyberSentinel's core innovation is a **three-tier detection pipeline** that balances speed, depth, and explainability:
 
-| Tier | Purpose | Typical technology |
-| :--- | :--- | :--- |
-| **Tier 1** | Fast local triage | Lexical / custom ML heuristics for URL & text |
-| **Tier 2** | Enrichment | External intel (e.g. Safe Browsing, VirusTotal) when configured |
-| **Tier 3** | Explainability | Google Gemini structured JSON — explanations, IOCs, remediation |
-
-Users can run **Auto** (fused) or force a single tier from the dashboard or extension.
-
-### Threat channels
-
-- **Malicious URL & phishing** — lookalike domains, credential harvest patterns, urgency language  
-- **Prompt injection** — jailbreaks, system-prompt leaks, payload highlighting  
-- **Deepfake / synthetic media** — image (and related) authenticity signals  
-- **Email / message review** — paste or scan message bodies for IOCs  
-
-### Operator console
-
-- Live Threat Analyzer with engine selection  
-- Threat History with filters, detail views, compare, and export  
-- Analytics (totals, high-risk blocked, timelines)  
-- Email scanner, browsing audit, and custom rule engine  
-
-### Browser extension (Manifest V3)
-
-- Context-menu and Quickball / Action Center scans  
-- Live page detection, manual scan, pause protection  
-- Deepfake upload, tier selection, AI assistant with page context  
-- Configurable API base URL and API key  
-
-### Explainability contract
-
-Every analysis aims to return a consistent shape:
-
-`risk_score` · `threat_level` · `indicators` · `explanation` · `recommended_actions` · optional `external_flags`
-
----
-
-## Architecture
-
-```text
-┌──────────────────────────────┐     ┌──────────────────────────────┐
-│  React Console + Landing     │     │  Chrome Extension (MV3)      │
-│  Vite · TypeScript · MUI     │     │  Quickball / Action Center   │
-└──────────────┬───────────────┘     └──────────────┬───────────────┘
-               │  REST / WebSocket                   │
-               └────────────────┬────────────────────┘
-                                ▼
-               ┌────────────────────────────────────┐
-               │  FastAPI Backend (:8000)             │
-               │  /api/analyze · /threats · /stats    │
-               │  /chat · /report · /rules · /intel   │
-               └────────────────┬───────────────────┘
-                                │
-          ┌─────────────────────┼─────────────────────┐
-          ▼                     ▼                     ▼
-   ┌─────────────┐      ┌──────────────┐      ┌──────────────┐
-   │  MongoDB    │      │  Gemini T3   │      │ Optional ML  │
-   │  Beanie ODM │      │  Explain +   │      │  HF Space URL │
-   │  threat_events │   │  Chat        │      │  (if set)    │
-   └─────────────┘      └──────────────┘      └──────────────┘
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   TIER 1    │ ───► │   TIER 2    │ ───► │   TIER 3    │
+│ Local Triage│      │ Enrichment  │      │ Explainable │
+│             │      │             │      │  Decision   │
+│ Heuristics  │      │ Safe Browse │      │   Gemini    │
+│ Custom ML   │      │ VirusTotal  │      │ Structured  │
+│ <50ms       │      │ Intel Fusion│      │    JSON     │
+└─────────────┘      └─────────────┘      └─────────────┘
 ```
 
-> **Note:** Heavy local Torch/transformers loads are intentionally offloaded from the main API for free-tier hosts. Leave `HF_API_URL` empty to operate **Gemini-only**, or point it at a separate ML service when available.
+| Tier | Purpose | Technology | Speed |
+| :---: | :--- | :--- | :---: |
+| **T1** | Fast local triage | Lexical heuristics, custom ML classifiers | ⚡ <50ms |
+| **T2** | Threat enrichment | Safe Browsing, VirusTotal, external intel fusion | 🔄 ~500ms |
+| **T3** | Explainability | Google Gemini structured JSON output | 🧠 ~2s |
+
+> Users can run **Auto** mode (all tiers fused) or force a single tier from the dashboard or extension Quickball.
 
 ---
 
-## Technology Stack
+## 🏗️ System Architecture
 
-| Layer | Stack |
-| :--- | :--- |
-| **Frontend** | React 19, TypeScript, Vite 6, MUI, Tailwind CSS, Zustand, Framer Motion, Recharts |
-| **Backend** | FastAPI, Uvicorn, Pydantic Settings, Loguru, httpx |
-| **Database** | MongoDB, Motor, Beanie |
-| **AI** | Google Gemini (`GEMINI_API_KEYS`), optional enrichment APIs |
-| **Extension** | Manifest V3, vanilla JS content/background/popup |
-| **Models** | Trained artifacts under `models/` (URL / text / deepfake weights) |
+```
+┌──────────────────────────────────┐     ┌──────────────────────────────────┐
+│     React Operator Console       │     │     Chrome Extension (MV3)       │
+│     Vite · TypeScript · MUI      │     │     Quickball / Action Center    │
+│     Tailwind · Framer Motion     │     │     Content · Background · Popup │
+└───────────────┬──────────────────┘     └───────────────┬──────────────────┘
+                │         REST / WebSocket               │
+                └──────────────────┬─────────────────────┘
+                                   ▼
+                ┌──────────────────────────────────────────┐
+                │         FastAPI Backend (:8000)           │
+                │                                          │
+                │  /api/analyze    Threat analysis          │
+                │  /api/threats    Event history            │
+                │  /api/stats      Dashboard aggregates     │
+                │  /api/chat       Security assistant       │
+                │  /api/report     Extension reports        │
+                │  /api/rules      Custom policy engine     │
+                │  /api/health     Health check             │
+                └───────────┬──────────┬───────────────────┘
+                            │          │
+              ┌─────────────┘          └─────────────┐
+              ▼                                      ▼
+     ┌──────────────────┐               ┌──────────────────┐
+     │    MongoDB        │               │  Google Gemini    │
+     │    Beanie ODM     │               │  Tier 3 Explain   │
+     │    threat_events  │               │  Assistant Chat   │
+     └──────────────────┘               └──────────────────┘
+```
 
 ---
 
-## Repository Structure
+## 🛠️ Technology Stack
 
-```text
+<table>
+<tr>
+<td width="140"><strong>Layer</strong></td>
+<td><strong>Technologies</strong></td>
+</tr>
+<tr>
+<td>🎨 <strong>Frontend</strong></td>
+<td>React 19 · TypeScript · Vite 6 · Material UI · Tailwind CSS · Zustand · Framer Motion · Recharts</td>
+</tr>
+<tr>
+<td>⚙️ <strong>Backend</strong></td>
+<td>FastAPI · Uvicorn · Pydantic Settings · Loguru · httpx · Motor</td>
+</tr>
+<tr>
+<td>🗄️ <strong>Database</strong></td>
+<td>MongoDB · Motor (async driver) · Beanie ODM</td>
+</tr>
+<tr>
+<td>🤖 <strong>AI Engine</strong></td>
+<td>Google Gemini (<code>gemini-2.5-flash</code>) · Optional enrichment APIs</td>
+</tr>
+<tr>
+<td>🧩 <strong>Extension</strong></td>
+<td>Chrome Manifest V3 · Vanilla JS · Content / Background / Popup scripts</td>
+</tr>
+<tr>
+<td>📦 <strong>ML Models</strong></td>
+<td>Trained artifacts under <code>models/</code> (URL / text / deepfake weights)</td>
+</tr>
+</table>
+
+---
+
+## 📁 Repository Structure
+
+```
 CyberShield AI/
-├── backend/                 # FastAPI application
+│
+├── 🔧 backend/                     # FastAPI application
 │   ├── app/
-│   │   ├── api/v1/          # Routes (analyze, threats, stats, chat, …)
-│   │   ├── clients/         # Gemini, Safe Browsing, VirusTotal, …
-│   │   ├── services/        # Phishing, URL, prompt, deepfake, risk engine
-│   │   ├── db/              # Beanie models & CRUD
-│   │   └── core/            # Config, security, prompts
+│   │   ├── api/v1/                 # Route handlers (analyze, threats, stats, chat, …)
+│   │   ├── clients/                # Gemini, Safe Browsing, VirusTotal integrations
+│   │   ├── services/               # Phishing, URL, prompt, deepfake, risk engine
+│   │   ├── db/                     # Beanie models & CRUD operations
+│   │   └── core/                   # Config, security, prompt templates
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   ├── requirements.txt
 │   └── .env.example
-├── frontend/                # React operator console + landing
+│
+├── 🎨 frontend/                    # React operator console + landing page
 │   ├── public/
-│   │   ├── logo.png         # Official CyberSentinel brand mark
-│   │   └── Preview_images/  # Product screenshots for docs
+│   │   ├── logo.png                # Official CyberSentinel brand mark
+│   │   └── Preview_images/         # Product screenshots for documentation
 │   ├── src/
-│   │   ├── pages/           # Landing, Dashboard, Threats, Analytics, …
-│   │   ├── features/        # Scan, threats, analytics, assistant, landing
-│   │   ├── components/      # Layout, brand logo, shared UI
-│   │   └── api/             # Axios client & endpoints
+│   │   ├── pages/                  # Landing, Dashboard, Threats, Analytics, …
+│   │   ├── features/               # Scan, threats, analytics, assistant, landing
+│   │   ├── components/             # Layout, brand logo, shared UI components
+│   │   └── api/                    # Axios client & endpoint definitions
 │   └── .env.example
-├── extension/               # Chrome MV3 extension
-├── models/                  # Trained ML artifacts
-├── cybersentinel-ml-api/    # Optional remote ML microservice
-├── doc/                     # Architecture & implementation docs
-└── README.md
+│
+├── 🧩 extension/                   # Chrome Manifest V3 extension
+│   ├── manifest.json
+│   ├── popup.html / popup.js       # Extension popup UI
+│   ├── content.js / content.css    # Quickball & Action Center injection
+│   └── background.js               # Service worker for event handling
+│
+├── 🧠 models/                      # Trained ML model artifacts
+├── 🔬 cybersentinel-ml-api/        # Optional remote ML microservice
+├── 📚 doc/                         # Architecture & implementation docs
+└── 📄 README.md
 ```
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js** 18+  
-- **Python** 3.10+  
-- **MongoDB** (local or [Atlas](https://www.mongodb.com/cloud/atlas))  
-- **Gemini API key** from [Google AI Studio](https://aistudio.google.com/)  
+| Requirement | Version | Link |
+| :--- | :--- | :--- |
+| Node.js | 18+ | [nodejs.org](https://nodejs.org/) |
+| Python | 3.10+ | [python.org](https://python.org/) |
+| MongoDB | Any | [MongoDB Atlas (free)](https://www.mongodb.com/cloud/atlas) |
+| Gemini API Key | — | [Google AI Studio](https://aistudio.google.com/) |
 
-### 1. Backend
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/your-username/CyberShield-AI.git
+cd "CyberShield AI"
+```
+
+### Step 2: Start the Backend
 
 ```bash
 cd backend
-python -m venv .venv
 
-# Windows
+# Create and activate virtual environment
+python -m venv .venv
+# Windows:
 .venv\Scripts\activate
-# macOS / Linux
+# macOS / Linux:
 source .venv/bin/activate
 
+# Install dependencies
 pip install -r requirements.txt
-copy .env.example .env   # or: cp .env.example .env
-# Edit .env — see Environment Configuration below
 
+# Configure environment
+cp .env.example .env
+# Edit .env with your MongoDB URI, Gemini API keys, etc.
+
+# Launch the server
 uvicorn app.main:app --reload --port 8000
 ```
 
-- Health: http://localhost:8000/api/health  
-- Swagger: http://localhost:8000/docs  
+✅ **Verify:** Open http://localhost:8000/api/health
+📖 **API Docs:** Open http://localhost:8000/docs
 
-### 2. Frontend
+### Step 3: Start the Frontend
 
 ```bash
 cd frontend
@@ -254,132 +278,141 @@ npm install
 npm run dev
 ```
 
-- App: http://localhost:5173  
-- Landing: `/` · Console: `/dashboard`  
+✅ **Verify:** Open http://localhost:5173
+- Landing page: `/`
+- Operator console: `/dashboard`
 
-### 3. Extension
+### Step 4: Load the Extension
 
-1. Chrome → `chrome://extensions` → enable **Developer mode**  
-2. **Load unpacked** → select the `extension/` folder  
-3. Open the popup → set API URL to `http://localhost:8000/api` and your `API_KEY`  
-
----
-
-## Environment Configuration
-
-### Backend (`backend/.env`)
-
-Use names that match the code (see `backend/.env.example`):
-
-| Variable | Description |
-| :--- | :--- |
-| `MONGODB_URI` | Mongo connection string |
-| `DB_NAME` | Database name (default `cybersentinel`) |
-| `GEMINI_API_KEYS` | One or more Gemini keys (comma-separated) |
-| `API_KEY` | Shared secret for `X-API-Key` |
-| `CORS_ORIGINS` | Comma-separated frontend origins |
-| `HF_API_URL` | Optional remote ML base URL (leave empty for Gemini-only) |
-| `USE_MOCK_AGENTS` | `false` for real Gemini responses |
-
-### Frontend (`frontend/.env`)
-
-| Variable | Description |
-| :--- | :--- |
-| `VITE_API_URL` | Backend origin, e.g. `http://localhost:8000` |
-| `VITE_API_KEY` | Must match backend `API_KEY` |
-| `VITE_USE_MOCKS` | `false` for real API calls |
-
-Production builds: set `VITE_*` on the host **before** build (Vite bakes them at compile time). See `frontend/.env.production.example`.
+1. Navigate to `chrome://extensions` in your browser
+2. Enable **Developer mode** (top right toggle)
+3. Click **Load unpacked** → select the `extension/` folder
+4. Open the popup → set API URL to `http://localhost:8000/api` and your API key
 
 ---
 
-## API Overview
+## 🔐 Environment Configuration
 
-Authenticated requests send header: `X-API-Key: <API_KEY>`
+<details>
+<summary><strong>Backend</strong> — <code>backend/.env</code></summary>
 
-| Method | Path | Purpose |
+| Variable | Required | Description |
+| :--- | :---: | :--- |
+| `MONGODB_URI` | ✅ | MongoDB connection string |
+| `DB_NAME` | — | Database name (default: `cybersentinel`) |
+| `GEMINI_API_KEYS` | ✅ | One or more Gemini keys, comma-separated |
+| `API_KEY` | ✅ | Shared secret for `X-API-Key` header auth |
+| `CORS_ORIGINS` | ✅ | Comma-separated frontend origins |
+| `HF_API_URL` | — | Optional remote ML base URL (leave empty for Gemini-only) |
+| `USE_MOCK_AGENTS` | — | Set `false` for real Gemini responses |
+
+</details>
+
+<details>
+<summary><strong>Frontend</strong> — <code>frontend/.env</code></summary>
+
+| Variable | Required | Description |
+| :--- | :---: | :--- |
+| `VITE_API_URL` | ✅ | Backend origin, e.g. `http://localhost:8000` |
+| `VITE_API_KEY` | ✅ | Must match backend `API_KEY` |
+| `VITE_USE_MOCKS` | — | Set `false` for real API calls |
+
+> ⚠️ **Production:** `VITE_*` vars are baked in at **build time**. Set them on your host before running `npm run build`. See `frontend/.env.production.example`.
+
+</details>
+
+---
+
+## 📡 API Reference
+
+All authenticated requests require the header: `X-API-Key: <your-api-key>`
+
+| Method | Endpoint | Description |
+| :---: | :--- | :--- |
+| `POST` | `/api/analyze` | 🔍 Main threat analysis (`type`, `content`, `source`, `tier`) |
+| `GET` | `/api/analyze/domain` | 🌐 Domain reputation check |
+| `GET` | `/api/threats` | 📜 Paginated threat history (filterable by `threat_type`, `threat_level`) |
+| `GET` | `/api/threats/{id}` | 📄 Single event detail |
+| `GET` | `/api/stats` | 📊 Dashboard aggregate statistics |
+| `POST` | `/api/chat` | 💬 AI security assistant |
+| `POST` | `/api/report` | 🚨 Manual threat reports from the extension |
+| `GET` | `/api/health` | ❤️ Health check |
+
+> 📖 **Full interactive API docs:** http://localhost:8000/docs
+
+---
+
+## 🧩 Browser Extension
+
+The Chrome extension provides real-time protection on every page you visit:
+
+| Feature | Description |
+| :--- | :--- |
+| 🎯 **Action Center** | Risk score display, tier picker, URL/text scan, deepfake upload |
+| 🔴 **Live Detection** | Background page monitoring with pause/resume control |
+| 📊 **Results Overlay** | In-page panel with risk, confidence, explanation, and remediation |
+| 🤖 **Ask CyberSentinel** | AI assistant chat with optional page URL context |
+| 🖥️ **Dashboard Link** | One-click jump to the full operator console |
+
+---
+
+## ☁️ Deployment
+
+### Recommended Free-Tier Stack
+
+| Component | Service | Notes |
 | :--- | :--- | :--- |
-| `POST` | `/api/analyze` | Main threat analysis (`type`, `content`, `source`, `tier`) |
-| `GET` | `/api/analyze/domain` | Domain reputation check |
-| `GET` | `/api/threats` | Paginated history (`threat_type`, `threat_level`) |
-| `GET` | `/api/threats/{id}` | Single event |
-| `GET` | `/api/stats` | Dashboard aggregates |
-| `POST` | `/api/chat` | Security assistant |
-| `POST` | `/api/report` | Manual reports from the extension |
-| `GET` | `/api/health` | Health check |
+| 🗄️ Database | **MongoDB Atlas** (M0 free tier) | 512 MB storage |
+| ⚙️ Backend | **Render** (free web service) | Root directory: `backend` |
+| 🎨 Frontend | **Vercel** (free hobby plan) | Root directory: `frontend` |
+| 🧩 Extension | Load unpacked / Chrome Web Store | Publish when ready |
 
-Full interactive docs: http://localhost:8000/docs  
+> 💡 Leave `HF_API_URL` empty to operate in **Gemini-only** mode. Attach your own ML inference URL later when needed.
+
+### Deployment Guides
+
+- 📘 [Free-Tier Deployment Guide](doc/free_tier_deployment_guide.md)
+- 📘 [Hugging Face Space Upload Guide](cybersentinel-ml-api/HF_UPLOAD_GUIDE.md)
 
 ---
 
-## Browser Extension
+## 📚 Documentation
 
-| Capability | Description |
+| Document | Description |
 | :--- | :--- |
-| **Action Center** | Score, tier picker, URL/text scan, deepfake upload |
-| **Live detection** | Background / page monitoring with pause control |
-| **Results overlay** | Risk, confidence, explanation, remediation |
-| **Ask CyberSentinel** | Chat with optional page URL context |
-| **Dashboard link** | Jump to the full operator console |
-
-Brand asset used in the product UI: [`frontend/public/logo.png`](frontend/public/logo.png)
-
----
-
-## Deployment
-
-Recommended free-tier path (Gemini-only):
-
-| Component | Host |
-| :--- | :--- |
-| Database | MongoDB Atlas (M0) |
-| Backend | Render (root: `backend`) |
-| Frontend | Vercel (root: `frontend`) |
-| Extension | Load unpacked (or Chrome Web Store later) |
-
-Hugging Face **Docker / Gradio Spaces** currently require a paid plan for new free accounts. Leave `HF_API_URL` empty unless you host ML elsewhere.
-
-Detailed guides:
-
-- [`free_tier_deployment_guide.md`](free_tier_deployment_guide.md)  
-- [`cybersentinel-ml-api/HF_UPLOAD_GUIDE.md`](cybersentinel-ml-api/HF_UPLOAD_GUIDE.md)  
+| 📘 [AI Implementation Overview](doc/AI_Implementation_Overview.md) | AI tiers, services, and schemas |
+| 📘 [Full-Stack Implementation Map](doc/Frontend_Backend_Extension_Implementation.md) | Frontend, backend, and extension architecture |
+| 📘 [Architecture Reference](doc/Architecture_Reference.md) | System architecture deep-dive |
+| 📘 [AI Engine Architecture](doc/CyberSentinel_AI_Engine_Architecture.md) | Detailed AI pipeline documentation |
+| 📘 [Project Gaps & Fixes](doc/Current_Project_Gaps_And_Fixes.md) | Known issues and planned fixes |
+| 📘 [Enhancement Roadmap](doc/enhancement_roadmap.md) | Future feature roadmap |
 
 ---
 
-## Documentation
+## 👥 Core Developers
 
-| Document | Contents |
-| :--- | :--- |
-| [`doc/AI_Implementation_Overview.md`](doc/AI_Implementation_Overview.md) | AI tiers, services, schemas |
-| [`doc/Frontend_Backend_Extension_Implementation.md`](doc/Frontend_Backend_Extension_Implementation.md) | Full-stack implementation map |
-| [`doc/Architecture_Reference.md`](doc/Architecture_Reference.md) | Architecture reference |
-| [`doc/Current_Project_Gaps_And_Fixes.md`](doc/Current_Project_Gaps_And_Fixes.md) | Known gaps and fixes |
-
----
-
-## Core Developers
-
-CyberSentinel is built and maintained by:
-
-| Developer | Role |
-| :--- | :--- |
-| **Farhan Sayed** | Core developer |
-| **Manas Sawant** | Core developer |
-| **Simran Singh** | Core developer |
-
-<p align="center">
-  <img src="frontend/public/logo.png" alt="CyberSentinel" width="72" />
-</p>
+<table>
+<tr>
+<td align="center"><strong>Farhan Sayed</strong><br /><sub>Core Developer</sub></td>
+<td align="center"><strong>Manas Sawant</strong><br /><sub>Core Developer</sub></td>
+<td align="center"><strong>Simran Singh</strong><br /><sub>Core Developer</sub></td>
+</tr>
+</table>
 
 ---
 
-## License
+## 📜 License
 
-This project is intended for educational and research use unless a separate license file is provided in the repository.
+This project is intended for **educational and research use** unless a separate license file is provided in the repository.
 
 ---
 
-<p align="center">
-  <strong>CyberSentinel</strong> — Explainable protection for every page you open.<br />
-  <sub>Built by Farhan Sayed · Manas Sawant · Simran Singh</sub>
-</p>
+<div align="center">
+
+<img src="frontend/public/logo.png" alt="CyberSentinel" width="64" />
+
+**CyberSentinel** — Explainable protection for every page you open.
+
+*Built with ❤️ by Farhan Sayed · Manas Sawant · Simran Singh*
+
+</div>
