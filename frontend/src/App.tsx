@@ -16,8 +16,28 @@ import { useUIStore } from './stores/useUIStore'
 import { useWebSocket } from './hooks/useWebSocket'
 import getTheme from './theme'
 
-function App() {
+import LandingPage from './pages/LandingPage'
+
+function InternalApp() {
   const location = useLocation()
+  return (
+    <AppLayout>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/threats" element={<ThreatHistoryPage />} />
+          <Route path="/threats/:id1/compare/:id2" element={<ThreatDiffPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/email" element={<EmailScanPage />} />
+          <Route path="/audit" element={<BrowsingAuditPage />} />
+          <Route path="/rules" element={<RulesPage />} />
+        </Routes>
+      </AnimatePresence>
+    </AppLayout>
+  )
+}
+
+function App() {
   const themeMode = useUIStore(state => state.themeMode)
   const dynamicTheme = useMemo(() => getTheme(themeMode), [themeMode])
   
@@ -28,19 +48,10 @@ function App() {
     <ThemeProvider theme={dynamicTheme}>
       <CssBaseline />
       <OnboardingTour />
-      <AppLayout>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/threats" element={<ThreatHistoryPage />} />
-            <Route path="/threats/:id1/compare/:id2" element={<ThreatDiffPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/email" element={<EmailScanPage />} />
-            <Route path="/audit" element={<BrowsingAuditPage />} />
-            <Route path="/rules" element={<RulesPage />} />
-          </Routes>
-        </AnimatePresence>
-      </AppLayout>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/*" element={<InternalApp />} />
+      </Routes>
       <AssistantWidget />
     </ThemeProvider>
   )

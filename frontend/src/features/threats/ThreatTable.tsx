@@ -72,123 +72,131 @@ export default function ThreatTable() {
   }
 
   return (
-    <div className="flex flex-col flex-1 animate-fade-in">
-      <div className="flex justify-between mb-2">
+    <div className="flex flex-col flex-1 animate-fade-in relative z-10 h-full mt-6 border-t border-theme-border pt-6">
+      <div className="flex justify-between mb-4">
         <div>
           {isCompareMode && (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-theme-secondary">
+            <div className="flex items-center gap-4 bg-theme-surface/50 px-4 py-2 rounded-xl border border-theme-border backdrop-blur-sm animate-fade-in shadow-sm">
+              <span className="text-xs font-bold text-theme-text-secondary uppercase tracking-wider">
                 Select 2 threats to compare ({compareIds.length}/2)
               </span>
-              <Button
-                variant="contained"
-                size="small"
+              <button
                 onClick={runComparison}
                 disabled={compareIds.length !== 2}
-                sx={{ bgcolor: '#8B5CF6', '&:hover': { bgcolor: '#7C3AED' } }}
+                className="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 View Comparison
-              </Button>
+              </button>
             </div>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={isCompareMode ? "contained" : "outlined"}
-            size="small"
-            startIcon={<CompareArrowsIcon />}
+        <div className="flex gap-3">
+          <button
             onClick={toggleCompareMode}
-            sx={isCompareMode 
-              ? { bgcolor: '#1E293B', color: '#E2E8F0', border: '1px solid #334155' }
-              : { borderColor: '#334155', color: '#94A3B8', '&:hover': { borderColor: '#8B5CF6', color: '#8B5CF6' } }
-            }
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+              isCompareMode 
+                ? 'bg-high-risk/10 text-high-risk border border-high-risk/30 hover:bg-high-risk/20'
+                : 'glass-panel text-theme-text-secondary border border-theme-border hover:text-theme-text hover:bg-theme-surface'
+            }`}
           >
-            {isCompareMode ? 'Cancel Compare' : 'Compare'}
-          </Button>
-          <Button 
-            variant="outlined" 
-            size="small" 
-            startIcon={<DownloadIcon />}
+            <CompareArrowsIcon fontSize="small" />
+            {isCompareMode ? 'Cancel Compare' : 'Compare Mode'}
+          </button>
+          <button 
             onClick={handleExportCSV}
             disabled={threats.length === 0}
-            sx={{ borderColor: '#334155', color: '#94A3B8', '&:hover': { borderColor: '#8B5CF6', color: '#8B5CF6' } }}
+            className="glass-panel flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-theme-text-secondary border border-theme-border hover:text-theme-text hover:bg-theme-surface uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
+            <DownloadIcon fontSize="small" />
             Export CSV
-          </Button>
+          </button>
         </div>
       </div>
-      <TableContainer className="bg-transparent border border-theme-border rounded-xl mb-4 overflow-hidden flex-1">
-        <Table stickyHeader>
+      
+      <TableContainer className="flex-1 overflow-auto rounded-xl">
+        <Table stickyHeader sx={{ borderCollapse: 'separate', borderSpacing: '0 8px', px: 1 }}>
           <TableHead>
             <TableRow>
-              {isCompareMode && <TableCell sx={{ bg: '#1E293B', width: 50 }} />}
-              <TableCell sx={{ bg: '#1E293B', color: '#94A3B8', fontWeight: 600 }}>Date/Time</TableCell>
-              <TableCell sx={{ bg: '#1E293B', color: '#94A3B8', fontWeight: 600 }}>Source</TableCell>
-              <TableCell sx={{ bg: '#1E293B', color: '#94A3B8', fontWeight: 600 }}>Type</TableCell>
-              <TableCell sx={{ bg: '#1E293B', color: '#94A3B8', fontWeight: 600 }}>Input Snip</TableCell>
-              <TableCell sx={{ bg: '#1E293B', color: '#94A3B8', fontWeight: 600 }}>Risk Score</TableCell>
-              <TableCell sx={{ bg: '#1E293B', color: '#94A3B8', fontWeight: 600 }}>Risk Level</TableCell>
+              {isCompareMode && <TableCell sx={{ border: 'none', py: 1 }} />}
+              <TableCell sx={{ border: 'none', color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', py: 1 }}>Date/Time</TableCell>
+              <TableCell sx={{ border: 'none', color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', py: 1 }}>Source</TableCell>
+              <TableCell sx={{ border: 'none', color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', py: 1 }}>Type</TableCell>
+              <TableCell sx={{ border: 'none', color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', py: 1 }}>Input Snippet</TableCell>
+              <TableCell sx={{ border: 'none', color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', py: 1 }}>Risk Score</TableCell>
+              <TableCell sx={{ border: 'none', color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', py: 1, textAlign: 'right', pr: 4 }}>Risk Level</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {threats.map((row) => (
               <TableRow
                 key={row.id}
-                hover
                 onClick={() => selectThreat(row.id)}
-                className="cursor-pointer transition-colors hover:bg-theme-secondary/10"
-                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                className="cursor-pointer group transition-all duration-300"
+                sx={{
+                  backgroundColor: 'rgba(var(--color-surface), 0.3)',
+                  backdropFilter: 'blur(12px)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(var(--color-surface), 0.8)',
+                    transform: 'translateY(-1px)'
+                  },
+                  '& td': { border: 'none', borderTop: '1px solid rgba(var(--color-border), 0.5)', borderBottom: '1px solid rgba(var(--color-border), 0.5)', py: 1.5 },
+                  '& td:first-of-type': { borderLeft: '1px solid rgba(var(--color-border), 0.5)', borderTopLeftRadius: '12px', borderBottomLeftRadius: '12px' },
+                  '& td:last-of-type': { borderRight: '1px solid rgba(var(--color-border), 0.5)', borderTopRightRadius: '12px', borderBottomRightRadius: '12px' },
+                }}
               >
                 {isCompareMode && (
-                  <TableCell onClick={(e) => toggleCompareId(row.id, e)}>
+                  <TableCell onClick={(e) => toggleCompareId(row.id, e)} sx={{ width: 50, pl: 2 }}>
                     <Checkbox
                       checked={compareIds.includes(row.id)}
                       disabled={!compareIds.includes(row.id) && compareIds.length >= 2}
-                      sx={{ color: '#475569', '&.Mui-checked': { color: '#8B5CF6' } }}
+                      sx={{ color: 'var(--color-text-secondary)', '&.Mui-checked': { color: '#3B82F6' } }}
                     />
                   </TableCell>
                 )}
-                <TableCell className="text-theme-secondary whitespace-nowrap">
+                <TableCell className="text-theme-text-secondary font-mono text-xs whitespace-nowrap" sx={{ pl: isCompareMode ? 0 : 3 }}>
                   {new Date(row.created_at).toLocaleString([], {
                     month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
                   })}
                 </TableCell>
-                <TableCell className="capitalize text-theme-secondary">{row.source}</TableCell>
-                <TableCell className="capitalize text-theme-secondary font-medium">
+                <TableCell className="capitalize text-theme-text-secondary text-sm font-medium">
+                  {row.source}
+                </TableCell>
+                <TableCell className="capitalize text-theme-text text-sm font-bold">
                   {row.threat_type.replace('_', ' ')}
                 </TableCell>
-                <TableCell className="text-theme-secondary max-w-[200px] truncate" title={row.raw_input_snippet}>
+                <TableCell className="text-theme-text-secondary text-sm max-w-[200px] truncate group-hover:text-theme-text transition-colors" title={row.raw_input_snippet}>
                   {row.raw_input_snippet}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 h-1.5 bg-theme-bg rounded-full overflow-hidden">
+                  <div className="flex items-center gap-3 bg-theme-surface p-1.5 rounded-lg border border-theme-border inline-flex backdrop-blur-md">
+                    <div className="w-16 h-1.5 bg-theme-border rounded-full overflow-hidden shadow-inner">
                       <div 
-                        className={`h-full ${row.risk_score >= 80 ? 'bg-high-risk' : row.risk_score >= 50 ? 'bg-suspicious' : row.risk_score >= 30 ? 'bg-low-risk' : 'bg-safe'}`} 
+                        className={`h-full ${row.risk_score >= 80 ? 'bg-high-risk' : row.risk_score >= 50 ? 'bg-suspicious' : row.risk_score >= 30 ? 'bg-low-risk' : 'bg-safe'} relative`} 
                         style={{ width: `${row.risk_score}%` }} 
-                      />
+                      >
+                      </div>
                     </div>
-                    <span className="text-xs text-theme-secondary w-6">{row.risk_score}</span>
+                    <span className="text-xs font-bold text-theme-text w-6">{row.risk_score}</span>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ textAlign: 'right', pr: 3 }}>
                   <RiskBadge level={row.threat_level} />
                 </TableCell>
               </TableRow>
             ))}
             {threats.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 12, borderBottom: 0 }}>
-                  <div className="flex flex-col items-center justify-center space-y-4 animate-fade-in">
-                    <div className="w-20 h-20 rounded-full bg-theme-bg/50 border border-theme-border flex items-center justify-center">
-                      <svg className="w-10 h-10 text-theme-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <TableCell colSpan={isCompareMode ? 7 : 6} align="center" sx={{ py: 12, border: 'none' }}>
+                  <div className="flex flex-col items-center justify-center space-y-5 animate-fade-in">
+                    <div className="w-24 h-24 rounded-3xl bg-theme-surface border border-theme-border flex items-center justify-center shadow-sm">
+                      <svg className="w-12 h-12 text-theme-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-theme-primary">No threats detected</h3>
-                      <p className="text-sm text-theme-secondary mt-1 max-w-sm mx-auto">
-                        Your environment is secure. Adjust your filters or initiate a new scan from the dashboard to analyze suspicious content.
+                      <h3 className="text-xl font-display font-bold text-theme-text drop-shadow-sm tracking-tight">No threats detected</h3>
+                      <p className="text-sm text-theme-text-secondary mt-2 max-w-sm mx-auto font-medium">
+                        Your environment is secure. Adjust your filters or initiate a new scan from the dashboard.
                       </p>
                     </div>
                   </div>
@@ -200,16 +208,15 @@ export default function ThreatTable() {
       </TableContainer>
 
       {total > pageSize && (
-        <div className="flex justify-center mt-auto py-2">
+        <div className="flex justify-center mt-6 pt-4 border-t border-theme-border relative z-10">
           <Pagination 
             count={Math.ceil(total / pageSize)} 
             page={page} 
             onChange={(_, p) => setPage(p)}
-            color="primary"
-            size="small"
             sx={{
-              '.MuiPaginationItem-root': { color: '#94A3B8' },
-              '.Mui-selected': { color: '#fff' }
+              '.MuiPaginationItem-root': { color: 'var(--color-text-secondary)', fontWeight: 600, fontFamily: 'inherit' },
+              '.Mui-selected': { bgcolor: 'rgba(37, 99, 235, 0.2) !important', color: '#fff', border: '1px solid rgba(37, 99, 235, 0.5)' },
+              '.MuiPaginationItem-root:hover': { bgcolor: 'rgba(var(--color-surface), 0.5)' }
             }}
           />
         </div>

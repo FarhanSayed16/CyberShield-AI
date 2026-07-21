@@ -1,9 +1,10 @@
 import { useState, useEffect, Suspense, lazy } from 'react'
-import { Box, Typography, Paper, Chip, Button } from '@mui/material'
+import { Box, Typography, Chip, Button } from '@mui/material'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import AnimatedPage from '../components/common/AnimatedPage'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import apiClient from '../api/client'
+import DownloadIcon from '@mui/icons-material/Download'
 
 // Lazy load existing components
 const KpiCards = lazy(() => import('../features/analytics/KpiCards'))
@@ -48,9 +49,9 @@ export default function AnalyticsPage() {
   }, [])
 
   const riskColor = (risk: number) => {
-    if (risk >= 60) return '#EF4444'
-    if (risk >= 30) return '#F59E0B'
-    return '#10B981'
+    if (risk >= 60) return '#EF4444' // high-risk
+    if (risk >= 30) return '#F59E0B' // suspicious
+    return '#10B981' // safe
   }
 
   // Build stacked bar chart data from timeline
@@ -66,19 +67,25 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <AnimatedPage className="flex flex-col pb-6">
-      <div className="mb-6 flex justify-between items-end">
+    <AnimatedPage className="flex flex-col pb-6 relative z-10">
+      <div className="mb-8 flex justify-between items-end relative z-10">
         <div>
-          <h1 className="text-2xl font-bold text-theme-primary mb-1">Security Analytics</h1>
-          <p className="text-sm text-theme-secondary">Threat intelligence, geographic distribution, and historical trends.</p>
+          <h1 className="text-3xl font-display font-bold text-theme-text mb-2 flex items-center gap-4 drop-shadow-sm tracking-tight">
+            Security Intelligence
+          </h1>
+          <p className="text-sm text-theme-text-secondary font-medium">Global threat distribution, historical trends, and security metrics.</p>
         </div>
-        <Button variant="outlined" onClick={handleExportPDF} sx={{ borderColor: '#8B5CF6', color: '#8B5CF6', '&:hover': { bgcolor: '#8B5CF622' } }}>
-          📄 Export PDF
-        </Button>
+        <button 
+          onClick={handleExportPDF} 
+          className="glass-panel flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface border border-theme-border uppercase tracking-wider shadow-sm transition-all duration-300"
+        >
+          <DownloadIcon fontSize="small" />
+          Export Report
+        </button>
       </div>
 
       <Suspense fallback={
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center min-h-[400px]">
           <LoadingSpinner />
         </div>
       }>
@@ -86,95 +93,91 @@ export default function AnalyticsPage() {
 
         {/* Attack Timeline — Stacked Bar Chart */}
         {chartData.length > 0 && (
-          <Paper sx={{ p: 3, mt: 3, bgcolor: 'rgba(15, 23, 42, 0.4)', borderRadius: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
-              📊 Attack Timeline (Last 48 Hours)
-            </Typography>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} barCategoryGap="15%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                <XAxis dataKey="time" tick={{ fill: '#94A3B8', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: '#0F172A', border: '1px solid #334155', borderRadius: 8, color: '#E2E8F0' }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Safe" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Suspicious" stackId="a" fill="#F59E0B" />
-                <Bar dataKey="High Risk" stackId="a" fill="#EF4444" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Paper>
+          <div className="glass-card p-6 mt-6 border-t-[3px] border-t-primary relative overflow-hidden group hover:shadow-sm transition-all duration-500">
+            <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              Attack Timeline (48 Hours)
+            </h3>
+            <div className="h-[300px] relative z-10">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" vertical={false} />
+                  <XAxis dataKey="time" tick={{ fill: 'var(--color-text-secondary)', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--color-text-secondary)', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ 
+                      background: 'rgba(var(--color-surface), 0.9)', 
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgb(var(--color-border))', 
+                      borderRadius: 12, 
+                      color: 'var(--color-text-primary)',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
+                    }}
+                    itemStyle={{ fontSize: 12, fontWeight: 600 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, fontWeight: 600, paddingTop: '10px' }} iconType="circle" />
+                  <Bar dataKey="Safe" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="Suspicious" stackId="a" fill="#F59E0B" />
+                  <Bar dataKey="High Risk" stackId="a" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
 
         {/* Geographic Threat Distribution */}
         {geoData.length > 0 && (
-          <Paper sx={{ p: 3, mt: 3, bgcolor: 'rgba(15, 23, 42, 0.4)', borderRadius: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
-              🌍 Geographic Threat Distribution
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 2 }}>
+          <div className="glass-card p-6 mt-6 border-t-[3px] border-t-safe relative overflow-hidden group hover:shadow-sm transition-all duration-500">
+            <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-safe animate-pulse" />
+              Geographic Threat Distribution
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-10">
               {geoData.filter(r => r.count > 0).sort((a, b) => b.count - a.count).map((region) => (
-                <Paper
+                <div
                   key={region.name}
-                  sx={{
-                    p: 2,
-                    bgcolor: 'rgba(30, 41, 59, 0.5)',
-                    border: '1px solid',
-                    borderColor: `${riskColor(region.avg_risk)}44`,
-                    borderRadius: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1,
-                  }}
+                  className="bg-theme-surface/50 border border-theme-border rounded-xl p-4 flex flex-col gap-3 shadow-sm hover:bg-theme-surface transition-colors"
                 >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#E2E8F0' }}>
-                      {region.name}
-                    </Typography>
-                    <Chip
-                      label={`${region.count}`}
-                      size="small"
-                      sx={{
-                        bgcolor: `${riskColor(region.avg_risk)}22`,
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-sm text-theme-text">{region.name}</span>
+                    <span 
+                      className="px-2 py-0.5 rounded text-xs font-bold border"
+                      style={{ 
+                        backgroundColor: `${riskColor(region.avg_risk)}22`, 
                         color: riskColor(region.avg_risk),
-                        fontWeight: 800,
-                        fontSize: '0.75rem',
+                        borderColor: `${riskColor(region.avg_risk)}44`
                       }}
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{
-                      flex: 1,
-                      height: 6,
-                      bgcolor: '#1E293B',
-                      borderRadius: 3,
-                      overflow: 'hidden',
-                    }}>
-                      <Box sx={{
-                        width: `${Math.min(100, region.avg_risk)}%`,
-                        height: '100%',
-                        bgcolor: riskColor(region.avg_risk),
-                        borderRadius: 3,
-                        transition: 'width 1s ease',
-                      }} />
-                    </Box>
-                    <Typography variant="caption" sx={{ color: '#64748B', minWidth: 30 }}>
+                    >
+                      {region.count}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-1.5 bg-theme-border rounded-full overflow-hidden">
+                      <div className="h-full rounded-full relative" style={{ width: `${Math.min(100, region.avg_risk)}%`, backgroundColor: riskColor(region.avg_risk) }}>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-theme-text-secondary min-w-[30px] text-right">
                       {region.avg_risk}%
-                    </Typography>
-                  </Box>
-                </Paper>
+                    </span>
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
             {geoData.every(r => r.count === 0) && (
-              <Typography sx={{ color: '#64748B', textAlign: 'center', py: 4 }}>
-                No threat data available yet. Run some scans to populate geographic distribution.
-              </Typography>
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-16 h-16 rounded-2xl bg-theme-surface border border-theme-border flex items-center justify-center mb-4 shadow-sm">
+                  <span className="text-2xl">🌍</span>
+                </div>
+                <Typography sx={{ color: 'var(--color-text-secondary)', textAlign: 'center', fontWeight: 600 }}>
+                  No geographic threat data available yet.
+                </Typography>
+              </div>
             )}
-          </Paper>
+          </div>
         )}
 
-        <div className="flex-1 mt-4">
+        <div className="flex-1 mt-6">
           <ThreatCharts />
         </div>
       </Suspense>

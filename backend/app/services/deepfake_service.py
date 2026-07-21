@@ -31,63 +31,49 @@ def _get_next_api_key() -> str:
     return key
 
 
-# === TIER 1: BASIC (Local Custom ML / PyTorch) ===
-async def evaluate_tier_1_basic(decoded_bytes: bytes, media_type: str) -> dict:
-    if not ai_manager.deepfake_tier1_model or media_type != "image":
-        return {"flagged": False, "score": 0.0}
-        
+# === TIER 1 & TIER 2: DELEGATED TO HF SPACE ===
+import httpx
+
+async def _call_hf_space_image(decoded_bytes: bytes) -> dict:
+    hf_url = (settings.HF_API_URL or "").rstrip("/")
+    if not hf_url:
+        logger.warning("HF_API_URL is not set. Skipping remote image analysis.")
+        return {"flagged": False, "score": 0.0, "error": "HF_API_URL not configured"}
     try:
-        import torch
-        # Read image to RGB
-        img = Image.open(io.BytesIO(decoded_bytes)).convert("RGB")
-        
-        # Apply torchvision transforms (224x224 resize, normalization)
-        input_tensor = ai_manager.deepfake_tier1_transform(img).unsqueeze(0)
-        
-        if torch.cuda.is_available():
-            input_tensor = input_tensor.cuda()
-            
-        with torch.no_grad():
-            output = ai_manager.deepfake_tier1_model(input_tensor)
-            # Output is logits for 2 classes: 0=Real, 1=Fake
-            probabilities = torch.nn.functional.softmax(output, dim=1)
-            fake_prob = probabilities[0][1].item()
-            
-        is_fake = fake_prob > 0.5
-        
-        return {
-            "flagged": is_fake, 
-            "score": fake_prob * 100
-        }
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            files = {'file': ('image.jpg', decoded_bytes, 'image/jpeg')}
+            response = await client.post(f"{hf_url}/predict/image", files=files)
+            response.raise_for_status()
+            return response.json()
     except Exception as e:
-        logger.error(f"PyTorch Tier 1 Vision Error: {e}")
+        logger.error(f"HF Space Image Analysis Error: {e}")
+        return {"flagged": False, "score": 0.0, "error": str(e)}
+
+async def evaluate_tier_1_basic(decoded_bytes: bytes, media_type: str) -> dict:
+    if media_type != "image":
         return {"flagged": False, "score": 0.0}
+        
+    result = await _call_hf_space_image(decoded_bytes)
+    return {
+        "flagged": result.get("flagged", False), 
+        "score": result.get("score", 0.0)
+    }
 
 
-# === TIER 2: MODERATE (Local HF) ===
+# === TIER 2: MODERATE (HF Space) ===
 async def evaluate_tier_2_moderate(decoded_bytes: bytes, media_type: str) -> dict:
-    if not ai_manager.deepfake_pipe or media_type != "image":
+    if media_type != "image":
         return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
         
-    try:
-        img = Image.open(io.BytesIO(decoded_bytes)).convert("RGB")
-        target_size = (224, 224)
-        if img.size[0] > 1000 or img.size[1] > 1000:
-             img.thumbnail(target_size)
-             
-        hf_result = await asyncio.to_thread(ai_manager.deepfake_pipe, img)
-        if hf_result:
-            label = str(hf_result[0]['label']).upper()
-            score = float(hf_result[0]['score'])
-            is_fake = "FAKE" in label or "1" in label or "ARTIFICIAL" in label
-            return {
-                "confidence": score,
-                "label": "DEEPFAKE" if is_fake else "REAL",
-                "hf_score": (score * 100) if is_fake else ((1.0 - score) * 100)
-            }
-    except Exception as e:
-        logger.error(f"HF Tier 2 Vision Error: {e}")
-    return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
+    result = await _call_hf_space_image(decoded_bytes)
+    is_fake = result.get("flagged", False)
+    score = result.get("score", 0.0) / 100.0
+    
+    return {
+        "confidence": score,
+        "label": "DEEPFAKE" if is_fake else "REAL",
+        "hf_score": (score * 100) if is_fake else ((1.0 - score) * 100)
+    }
 
 
 # === TIER 3: ADVANCED (Gemini Vision LLM) ===

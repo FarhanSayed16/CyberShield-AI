@@ -2,8 +2,6 @@ import { useCallback, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { useScanStore } from '../../stores/useScanStore'
-import Card from '../../components/common/Card'
-import { Button } from '@mui/material'
 import LinkIcon from '@mui/icons-material/Link'
 import EmailIcon from '@mui/icons-material/Email'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
@@ -71,30 +69,33 @@ export default function ScanForm() {
   }
 
   return (
-    <Card className="tour-scan-input flex flex-col h-full border-t-4 border-t-primary relative">
-      <div className="mb-6 flex justify-between items-start">
+    <div className="glass-card tour-scan-input flex flex-col h-full p-6 relative overflow-hidden border-t-[3px] border-t-primary">
+      
+      <div className="mb-6 flex justify-between items-start relative z-10">
         <div>
-          <h2 className="text-xl font-bold mb-1">Threat Analyzer</h2>
-          <p className="text-sm text-theme-secondary">Scan URLs, emails, or prompts for malicious intent</p>
+          <h2 className="text-2xl font-display font-bold mb-1 text-theme-text drop-shadow-md">Threat Analyzer</h2>
+          <p className="text-sm text-theme-text-secondary">Scan URLs, emails, or prompts for malicious intent</p>
         </div>
-        <div className="hidden sm:flex items-center gap-1 text-xs text-theme-secondary font-mono bg-theme-bg px-2 py-1 rounded border border-theme-border">
-          <kbd>⌘</kbd> + <kbd>K</kbd>
+        <div className="hidden sm:flex items-center gap-1 text-xs text-theme-text-secondary font-mono bg-theme-surface/50 px-2 py-1 rounded-md border border-theme-border shadow-sm">
+          <kbd className="font-sans">⌘</kbd> + <kbd className="font-sans">K</kbd>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-theme-bg/50 rounded-xl mb-6">
+      <div className="flex gap-2 p-1 bg-theme-surface/30 border border-theme-border rounded-xl mb-6 relative z-10">
         {SCAN_TYPES.map(type => (
           <button
             key={type.id}
             onClick={() => setType(type.id)}
-            className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 ${
               scanType === type.id 
-                ? 'bg-theme-card text-theme-primary shadow-lg border border-theme-border' 
-                : 'text-theme-secondary hover:text-theme-primary hover:bg-theme-secondary/10'
+                ? 'bg-theme-surface border border-theme-border text-theme-text shadow-sm' 
+                : 'text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface/50'
             }`}
           >
-            {type.icon}
+            <span className={`${scanType === type.id ? 'text-primary' : ''}`}>
+              {type.icon}
+            </span>
             <span className="hidden sm:inline">{type.label}</span>
           </button>
         ))}
@@ -103,37 +104,37 @@ export default function ScanForm() {
       {/* Input Area */}
       <div 
         {...getRootProps()} 
-        className={`flex-1 flex flex-col mb-6 relative overflow-hidden rounded-xl transition-colors border-2 ${
-          isDragActive ? 'border-primary bg-primary/10' : 'border-transparent'
+        className={`flex-1 flex flex-col mb-6 relative overflow-hidden rounded-xl transition-all duration-300 border-2 z-10 ${
+          isDragActive ? 'border-primary bg-primary/5' : 'border-theme-border hover:border-theme-text-secondary/30'
         }`}
       >
         <input {...getInputProps()} />
         
         {isDragActive && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-theme-bg/80 backdrop-blur-sm border-2 border-dashed border-primary rounded-xl text-primary animate-pulse">
-            <UploadFileIcon fontSize="large" className="mb-2" />
-            <span className="font-bold text-lg">Drop file to scan instantly</span>
+            <UploadFileIcon fontSize="large" className="mb-3 scale-125" />
+            <span className="font-display font-bold text-xl tracking-wider">Drop file to scan instantly</span>
           </div>
         )}
 
         {isLoading && (
-          <div className="absolute inset-x-0 top-0 h-full pointer-events-none z-10 flex flex-col items-center pt-8">
-            <div className="w-full h-1 bg-primary/80 shadow-[0_0_15px_#8B5CF6] animate-laser-scan"></div>
-            <div className="mt-12 bg-theme-bg/80 backdrop-blur border border-primary/30 text-primary text-xs px-4 py-1.5 rounded-full animate-pulse flex items-center gap-2">
+          <div className="absolute inset-x-0 top-0 h-full pointer-events-none z-10 flex flex-col items-center pt-8 bg-theme-bg/30 backdrop-blur-[2px]">
+            <div className="w-full h-1 bg-primary/50 shadow-[0_0_15px_rgba(37,99,235,0.6)] animate-laser-scan rounded-full"></div>
+            <div className="mt-12 glass-panel border-primary/30 text-primary text-xs px-5 py-2 rounded-full animate-pulse flex items-center gap-2 shadow-sm">
               <SearchIcon fontSize="small" />
-              <span>Analyzing heuristics & querying AI engine...</span>
+              <span className="font-medium tracking-wide">Analyzing heuristics & querying AI engine...</span>
             </div>
           </div>
         )}
         
         {scanType === 'image' ? (
-          <div className={`flex-1 min-h-[200px] border-2 border-dashed border-theme-border rounded-xl flex flex-col items-center justify-center text-theme-secondary bg-theme-bg/20 transition-colors pointer-events-auto group ${isLoading ? 'opacity-50' : 'hover:bg-theme-bg/40 hover:border-primary/50 cursor-pointer'}`}>
-            <div className="p-4 rounded-full bg-theme-card group-hover:bg-primary/20 mb-3 transition-colors">
-              <ImageIcon fontSize="large" className="group-hover:text-primary transition-colors" />
+          <div className={`flex-1 min-h-[220px] bg-theme-surface/30 flex flex-col items-center justify-center text-theme-text-secondary transition-all duration-300 pointer-events-auto group ${isLoading ? 'opacity-50' : 'hover:bg-theme-surface/50 cursor-pointer'}`}>
+            <div className="p-4 rounded-xl bg-theme-surface border border-theme-border group-hover:border-primary/30 mb-4 transition-colors">
+              <ImageIcon fontSize="large" className="group-hover:text-primary transition-colors duration-300 scale-125" />
             </div>
-            <p className="font-medium text-theme-secondary">Upload Image / Video</p>
-            <p className="text-xs mt-1">PNG, JPG, MP4 up to 10MB</p>
-            {content && <p className="text-secondary mt-3 text-sm font-bold">{fileName || 'File loaded'}</p>}
+            <p className="font-display font-medium text-theme-text tracking-wide">Upload Image or Video</p>
+            <p className="text-xs mt-1.5 text-theme-text-secondary font-mono">PNG, JPG, MP4 (Max 10MB)</p>
+            {content && <p className="text-primary mt-4 text-sm font-semibold truncate max-w-[80%] px-3 py-1 bg-primary/10 rounded-full border border-primary/20">{fileName || 'File loaded'}</p>}
           </div>
         ) : (
           <textarea
@@ -142,21 +143,21 @@ export default function ScanForm() {
             onChange={e => setContent(e.target.value)}
             disabled={isLoading}
             placeholder={activeTypeInfo.placeholder}
-            className={`flex-1 min-h-[200px] bg-theme-bg/40 border border-theme-border rounded-xl p-4 text-theme-primary placeholder:text-theme-secondary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm transition-opacity pointer-events-auto ${isLoading ? 'opacity-50' : ''}`}
+            className={`flex-1 min-h-[220px] bg-theme-surface/30 p-5 text-theme-text placeholder:text-theme-text-secondary focus:outline-none focus:bg-theme-surface/50 focus:ring-1 focus:ring-primary/50 resize-none font-mono text-sm leading-relaxed transition-all duration-300 pointer-events-auto ${isLoading ? 'opacity-50' : ''}`}
           />
         )}
       </div>
 
       {/* Tiers Option */}
-      <div className="flex flex-col gap-2 mb-6">
-        <label className="text-xs font-semibold text-theme-secondary uppercase tracking-wider px-1">AI Engine Selection</label>
-        <div className="flex gap-2 p-1 bg-theme-bg/30 border border-theme-border/50 rounded-xl">
+      <div className="flex flex-col gap-2.5 mb-8 relative z-10">
+        <label className="text-[10px] font-bold text-theme-text-secondary uppercase tracking-[0.2em] px-2">Engine Selection</label>
+        <div className="flex gap-2 p-1 bg-theme-surface/30 border border-theme-border rounded-xl">
           {(['auto', 'tier1', 'tier2', 'tier3'] as const).map(tier => {
             const labels: Record<string, string> = {
-              auto: 'Auto (Fused)',
-              tier1: 'Tier 1 Local ML',
-              tier2: 'Tier 2 Vision/Regex',
-              tier3: 'Tier 3 Gemini 1.5'
+              auto: 'Auto',
+              tier1: 'Local ML',
+              tier2: 'Vision',
+              tier3: 'Gemini'
             };
             return (
               <button
@@ -165,10 +166,10 @@ export default function ScanForm() {
                   e.stopPropagation();
                   setTier(tier);
                 }}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                className={`flex-1 py-1.5 px-1 rounded-lg text-xs font-semibold transition-all duration-200 ${
                   selectedTier === tier
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-theme-secondary hover:text-theme-primary hover:bg-theme-secondary/10'
+                    ? 'bg-theme-border text-theme-text shadow-sm'
+                    : 'text-theme-text-secondary hover:text-theme-text hover:bg-theme-surface'
                 }`}
               >
                 {labels[tier]}
@@ -179,27 +180,25 @@ export default function ScanForm() {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between gap-4 mt-auto">
+      <div className="flex items-center justify-between gap-4 mt-auto relative z-10">
         {scanType !== 'image' ? (
           <button
             onClick={handleExampleClick}
-            className="text-xs text-primary hover:text-primary-light transition-colors underline underline-offset-4"
+            className="text-xs font-medium text-primary hover:text-primary-hover transition-colors underline decoration-primary/30 underline-offset-4"
           >
-            Try example
+            Try Example Data
           </button>
         ) : <div />}
 
-        <Button
-          variant="contained"
-          color="primary"
+        <button
           onClick={submitScan}
           disabled={isLoading || (!content && scanType !== 'image')}
-          startIcon={isLoading ? null : <SearchIcon />}
-          sx={{ minWidth: 140 }}
+          className="btn-primary px-8 py-2.5 rounded-xl text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-display"
         >
           {isLoading ? 'Scanning...' : 'Scan Now'}
-        </Button>
+          {!isLoading && <SearchIcon fontSize="small" />}
+        </button>
       </div>
-    </Card>
+    </div>
   )
 }

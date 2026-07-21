@@ -1,450 +1,385 @@
-# 🛡️ CyberShield AI - Advanced Threat Intelligence Platform
+# CyberSentinel
 
-<div align="center">
+<p align="center">
+  <img src="frontend/public/logo.png" alt="CyberSentinel Logo" width="140" />
+</p>
 
-**Enterprise-Grade AI-Powered Cyber Defense & Threat Detection**
+<p align="center">
+  <strong>Explainable AI-Powered Cyber Defense Platform</strong><br />
+  Detect · Analyze · Explain · Remediate
+</p>
 
-![Status](https://img.shields.io/badge/status-active-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-blue)
-![Python](https://img.shields.io/badge/python-3.10+-blue?logo=python)
-![Node.js](https://img.shields.io/badge/node.js-18+-green?logo=node.js)
+<p align="center">
+  <img src="https://img.shields.io/badge/status-active-0F766E?style=flat-square" alt="Status" />
+  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/FastAPI-0.135-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/MongoDB-Atlas%20%7C%20Local-47A248?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Extension-Manifest%20V3-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension" />
+</p>
 
-</div>
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Product Preview](#product-preview)
+- [Core Features](#core-features)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Repository Structure](#repository-structure)
+- [Quick Start](#quick-start)
+- [Environment Configuration](#environment-configuration)
+- [API Overview](#api-overview)
+- [Browser Extension](#browser-extension)
+- [Deployment](#deployment)
+- [Documentation](#documentation)
+- [Core Developers](#core-developers)
+- [License](#license)
+
+---
 
 ## Overview
 
-**CyberShield AI** is a comprehensive, AI-powered cyber defense platform that provides real-time protection against sophisticated threats including **zero-day phishing attacks**, **AI-generated deepfakes**, **prompt injection attacks**, and emerging cyber threats.
+**CyberSentinel** (CyberShield AI) is an explainable cyber defense platform that protects users across the browser and an operator console. It analyzes **phishing**, **malicious URLs**, **prompt injection**, **synthetic media (deepfakes)**, and related threats using a **multi-tier detection pipeline**—then returns not only a risk score, but **indicators, plain-language explanations, and recommended actions**.
 
-The platform combines:
-- **Multi-tier machine learning analysis** (local heuristics → deep learning → generative AI)
-- **Real-time browser extension** with network traffic monitoring
-- **Enterprise dashboard** with threat intelligence and visualization
-- **Automated governance** with deterministic rule engine and remediation playbooks
-- **Voice-activated AI assistant** ("Quickball") for seamless user interaction
+| Surface | Role |
+| :--- | :--- |
+| **Landing + Operator Console** | Marketing site and full dashboard for scan, history, analytics, email, audit, and rules |
+| **Browser Extension** | Real-time Quickball / Action Center on every page |
+| **FastAPI Backend** | Analyze, threats, stats, chat, report, rules, and intel APIs |
+| **MongoDB** | Persistent threat event history |
+| **Gemini (Tier 3)** | Structured explainability and assistant chat |
 
-## ✨ Key Features
+---
 
-### 🧠 Multi-Tier AI Analysis Engine
-Progressive threat evaluation with three escalating detection layers:
+## Product Preview
 
-| Tier | Component | Technology | Response Time | Coverage |
-|------|-----------|-----------|-------|----------|
-| **1** | Local Heuristics & ML | Scikit-learn + Lexical Entropy | <50ms | URLs, IPs, Domains |
-| **2** | Deep Learning | DistilBERT (text), ViT (images), Hugging Face | <500ms | Text, Images, PDFs |
-| **3** | Generative AI | Google Gemini 2.5 Flash | <3s | Context, Narrative, Decisions |
+### Landing page
 
-- **Tier 1**: Instantly detects obfuscated adversarial URLs using feature extraction and ML classification
-- **Tier 2**: Classifies deepfakes and prompt injection attacks entirely on-device
-- **Tier 3**: Contextualizes multi-vector threats and generates actionable executive summaries
+<p align="center">
+  <img src="frontend/public/Preview_images/01-landing-hero.png" alt="CyberSentinel Landing Page" width="900" />
+</p>
 
-### 🌐 Browser Extension & "Quickball" Assistant
-**Real-time threat detection at the point of browsing:**
-- **Network Monitoring**: Intercepts and scores HTTP/HTTPS requests at browser level
-- **Quickball Widget**: Draggable floating UI on every webpage with risk scoring, AI chat, and media scanning
-- **Voice Commands**: Natural language interaction via Web Speech APIs
-- **Instant Notifications**: Immediate alerts for high-risk activities without context switching
+<p align="center"><em>Brand-first landing experience with explainable analysis mock and product CTAs</em></p>
 
-### 📊 Enterprise Dashboard
-**Comprehensive threat visibility and management:**
-- **Live Threat Board**: Real-time WebSocket feeds of IOCs (Indicators of Compromise) with instant updates
-- **Geographic Threat Maps**: Interactive visualization of attack origins, intensity, and temporal patterns
-- **Threat Diffing**: Comparative analysis of historical scans with risk delta calculations
-- **Federated Sharing**: Anonymized threat indicators (SHA-256) syndicated to global intelligence network
-- **Custom Dashboards**: Role-based views for security analysts, executives, and incident responders
+### Operator console — Live scan
 
-### 🛡️ Automated Governance & Remediation
-**Security at scale with minimal manual intervention:**
-- **Deterministic Rule Engine**: 
-  - Intuitive UI for crafting security policies
-  - IF/THEN/ELSE conditional logic (e.g., `IF domain ENDS_WITH '.ru' AND score > 80 THEN Action = BLOCK`)
-  - Rule versioning and audit trails
-  - Admin approval workflows
-  
-- **Automated Remediation**:
-  - AI-generated 3-step mitigation playbooks
-  - Guided "Fix It" wizard for incident response
-  - Integration with ticketing systems
-  - Automated threat hunting recommendations
+<p align="center">
+  <img src="frontend/public/Preview_images/02-dashboard-scan.png" alt="Live Scan Dashboard" width="900" />
+</p>
 
-## 🏗️ Architecture
+<p align="center"><em>Threat Analyzer with URL / text / prompt / deepfake inputs and engine tier selection</em></p>
 
-### System Components
+### Threat history
 
+<p align="center">
+  <img src="frontend/public/Preview_images/03-threat-history.png" alt="Threat History" width="900" />
+</p>
+
+<p align="center"><em>Filterable event log with risk scores, levels, compare mode, and CSV export</em></p>
+
+### Security analytics
+
+<p align="center">
+  <img src="frontend/public/Preview_images/04-analytics.png" alt="Security Analytics" width="900" />
+</p>
+
+<p align="center"><em>KPI cards and attack timeline for operational visibility</em></p>
+
+### Browser extension — Action Center
+
+<p align="center">
+  <img src="frontend/public/Preview_images/05-extension-action-center.png" alt="Extension Action Center" width="420" />
+  &nbsp;&nbsp;
+  <img src="frontend/public/Preview_images/06-extension-results.png" alt="Extension Analysis Results" width="420" />
+</p>
+
+<p align="center"><em>In-page Action Center: tier selection, URL/text scan, deepfake upload, live detection, and explainable results</em></p>
+
+---
+
+## Core Features
+
+### Multi-tier detection engine
+
+| Tier | Purpose | Typical technology |
+| :--- | :--- | :--- |
+| **Tier 1** | Fast local triage | Lexical / custom ML heuristics for URL & text |
+| **Tier 2** | Enrichment | External intel (e.g. Safe Browsing, VirusTotal) when configured |
+| **Tier 3** | Explainability | Google Gemini structured JSON — explanations, IOCs, remediation |
+
+Users can run **Auto** (fused) or force a single tier from the dashboard or extension.
+
+### Threat channels
+
+- **Malicious URL & phishing** — lookalike domains, credential harvest patterns, urgency language  
+- **Prompt injection** — jailbreaks, system-prompt leaks, payload highlighting  
+- **Deepfake / synthetic media** — image (and related) authenticity signals  
+- **Email / message review** — paste or scan message bodies for IOCs  
+
+### Operator console
+
+- Live Threat Analyzer with engine selection  
+- Threat History with filters, detail views, compare, and export  
+- Analytics (totals, high-risk blocked, timelines)  
+- Email scanner, browsing audit, and custom rule engine  
+
+### Browser extension (Manifest V3)
+
+- Context-menu and Quickball / Action Center scans  
+- Live page detection, manual scan, pause protection  
+- Deepfake upload, tier selection, AI assistant with page context  
+- Configurable API base URL and API key  
+
+### Explainability contract
+
+Every analysis aims to return a consistent shape:
+
+`risk_score` · `threat_level` · `indicators` · `explanation` · `recommended_actions` · optional `external_flags`
+
+---
+
+## Architecture
+
+```text
+┌──────────────────────────────┐     ┌──────────────────────────────┐
+│  React Console + Landing     │     │  Chrome Extension (MV3)      │
+│  Vite · TypeScript · MUI     │     │  Quickball / Action Center   │
+└──────────────┬───────────────┘     └──────────────┬───────────────┘
+               │  REST / WebSocket                   │
+               └────────────────┬────────────────────┘
+                                ▼
+               ┌────────────────────────────────────┐
+               │  FastAPI Backend (:8000)             │
+               │  /api/analyze · /threats · /stats    │
+               │  /chat · /report · /rules · /intel   │
+               └────────────────┬───────────────────┘
+                                │
+          ┌─────────────────────┼─────────────────────┐
+          ▼                     ▼                     ▼
+   ┌─────────────┐      ┌──────────────┐      ┌──────────────┐
+   │  MongoDB    │      │  Gemini T3   │      │ Optional ML  │
+   │  Beanie ODM │      │  Explain +   │      │  HF Space URL │
+   │  threat_events │   │  Chat        │      │  (if set)    │
+   └─────────────┘      └──────────────┘      └──────────────┘
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Frontend Layer                               │
-│  React 18 Dashboard (Port 5173) | Browser Extension            │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                    REST/WebSocket
-                         │
-┌────────────────────────▼────────────────────────────────────────┐
-│                    API Layer                                    │
-│  FastAPI + Uvicorn (Port 8000)                                 │
-│  - Request routing & validation                                │
-│  - WebSocket connections for real-time updates                 │
-│  - CORS middleware & authentication                            │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────────────┐
-│              AI/ML Processing Layer                             │
-├─────────────────┬──────────────────┬──────────────────┐        │
-│ Tier 1: Local   │ Tier 2: Deep     │ Tier 3: LLM      │        │
-│ ├─ Scikit-Learn │ ├─ DistilBERT    │ ├─ Gemini 2.5    │        │
-│ ├─ URL Parsing  │ ├─ ViT Images    │ └─ Narrative Gen │        │
-│ └─ Heuristics   │ └─ Transformers  │                  │        │
-└────────────────┴──────────────────┴──────────────────┘        │
-                         │
-┌────────────────────────▼────────────────────────────────────────┐
-│              Data & Storage Layer                               │
-│  MongoDB (Atlas or Local) | Motor (Async Driver)               │
-│  - Threat Intelligence DB | ML Models Cache | User Sessions    │
-└─────────────────────────────────────────────────────────────────┘
+
+> **Note:** Heavy local Torch/transformers loads are intentionally offloaded from the main API for free-tier hosts. Leave `HF_API_URL` empty to operate **Gemini-only**, or point it at a separate ML service when available.
+
+---
+
+## Technology Stack
+
+| Layer | Stack |
+| :--- | :--- |
+| **Frontend** | React 19, TypeScript, Vite 6, MUI, Tailwind CSS, Zustand, Framer Motion, Recharts |
+| **Backend** | FastAPI, Uvicorn, Pydantic Settings, Loguru, httpx |
+| **Database** | MongoDB, Motor, Beanie |
+| **AI** | Google Gemini (`GEMINI_API_KEYS`), optional enrichment APIs |
+| **Extension** | Manifest V3, vanilla JS content/background/popup |
+| **Models** | Trained artifacts under `models/` (URL / text / deepfake weights) |
+
+---
+
+## Repository Structure
+
+```text
+CyberShield AI/
+├── backend/                 # FastAPI application
+│   ├── app/
+│   │   ├── api/v1/          # Routes (analyze, threats, stats, chat, …)
+│   │   ├── clients/         # Gemini, Safe Browsing, VirusTotal, …
+│   │   ├── services/        # Phishing, URL, prompt, deepfake, risk engine
+│   │   ├── db/              # Beanie models & CRUD
+│   │   └── core/            # Config, security, prompts
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── requirements.txt
+│   └── .env.example
+├── frontend/                # React operator console + landing
+│   ├── public/
+│   │   ├── logo.png         # Official CyberSentinel brand mark
+│   │   └── Preview_images/  # Product screenshots for docs
+│   ├── src/
+│   │   ├── pages/           # Landing, Dashboard, Threats, Analytics, …
+│   │   ├── features/        # Scan, threats, analytics, assistant, landing
+│   │   ├── components/      # Layout, brand logo, shared UI
+│   │   └── api/             # Axios client & endpoints
+│   └── .env.example
+├── extension/               # Chrome MV3 extension
+├── models/                  # Trained ML artifacts
+├── cybersentinel-ml-api/    # Optional remote ML microservice
+├── doc/                     # Architecture & implementation docs
+└── README.md
 ```
 
-## 🛠️ Technology Stack
+---
 
-<table>
-<tr>
-<td><b>Component</b></td>
-<td><b>Technology</b></td>
-<td><b>Version</b></td>
-</tr>
-<tr>
-<td>Frontend Framework</td>
-<td>React + TypeScript + Vite</td>
-<td>18.x, Vite 5+</td>
-</tr>
-<tr>
-<td>State Management</td>
-<td>Zustand</td>
-<td>4.x</td>
-</tr>
-<tr>
-<td>UI Components</td>
-<td>Tailwind CSS, Framer Motion</td>
-<td>Latest</td>
-</tr>
-<tr>
-<td>Data Visualization</td>
-<td>Recharts</td>
-<td>2.x</td>
-</tr>
-<tr>
-<td>Backend Framework</td>
-<td>FastAPI + Uvicorn + Asyncio</td>
-<td>Python 3.10+</td>
-</tr>
-<tr>
-<td>Database Driver</td>
-<td>Motor (Async MongoDB), Beanie ODM</td>
-<td>Latest</td>
-</tr>
-<tr>
-<td>ML/DL Frameworks</td>
-<td>PyTorch, Scikit-Learn, Joblib</td>
-<td>Latest</td>
-</tr>
-<tr>
-<td>NLP Models</td>
-<td>Hugging Face Transformers</td>
-<td>4.x+</td>
-</tr>
-<tr>
-<td>LLM Integration</td>
-<td>Google Generative AI (Gemini 2.5 Flash)</td>
-<td>Latest</td>
-</tr>
-<tr>
-<td>Database</td>
-<td>MongoDB</td>
-<td>5.0+</td>
-</tr>
-<tr>
-<td>Browser Extension</td>
-<td>Manifest V3, Vanilla JavaScript</td>
-<td>Latest</td>
-</tr>
-</table>
-
-## 🚀 Quick Start Guide
+## Quick Start
 
 ### Prerequisites
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **Node.js** | 18.0+ | Frontend development & build |
-| **Python** | 3.10+ | Backend API & ML services |
-| **MongoDB** | 5.0+ | Threat intelligence database |
-| **Git** | Latest | Version control |
+- **Node.js** 18+  
+- **Python** 3.10+  
+- **MongoDB** (local or [Atlas](https://www.mongodb.com/cloud/atlas))  
+- **Gemini API key** from [Google AI Studio](https://aistudio.google.com/)  
 
-### Optional
-- **Google Gemini API Key**: [Get it here](https://aistudio.google.com/) (for threat narrative generation)
-- **Hugging Face Token**: [Optional for gated models](https://huggingface.co/settings/tokens)
-
-### Installation Steps
-
-#### 1️⃣ Clone Repository & Setup MongoDB
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/cybershield-ai.git
-cd cybershield-ai
-
-# Start MongoDB (if running locally)
-# Using Docker (recommended):
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-# Or install locally: https://docs.mongodb.com/manual/installation/
-```
-
-#### 2️⃣ Backend Setup
+### 1. Backend
 
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv .venv
 
-# Activate environment
-# Windows:
+# Windows
 .venv\Scripts\activate
-# macOS/Linux:
+# macOS / Linux
 source .venv/bin/activate
 
-# Install Python dependencies
 pip install -r requirements.txt
-```
+copy .env.example .env   # or: cp .env.example .env
+# Edit .env — see Environment Configuration below
 
-**Configure Environment Variables** (create `backend/.env`):
-```env
-# Core Settings
-API_KEY=your_secure_api_key_here
-FRONTEND_URL=http://localhost:5173
-CORS_ORIGINS=http://localhost:5173,chrome-extension://<your-extension-id>
-ENVIRONMENT=development
-
-# Database Configuration
-MONGODB_URI=mongodb://localhost:27017
-MONGODB_DB_NAME=cybershield_ai
-
-# AI Services
-GEMINI_API_KEY=your_gemini_api_key_here
-HF_TOKEN=your_huggingface_token_here
-
-# Model Storage
-DEEPFAKE_UPLOAD_DIR=./uploads/deepfakes
-MODELS_DIR=../models
-```
-
-**Start Backend Server:**
-```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-📌 *First startup downloads Hugging Face transformer weights (~1-2GB). This happens automatically.*
+- Health: http://localhost:8000/api/health  
+- Swagger: http://localhost:8000/docs  
 
-🔍 **API Documentation**: Once running, visit [http://localhost:8000/docs](http://localhost:8000/docs)
-
-#### 3️⃣ Frontend Setup
+### 2. Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-🎨 **Dashboard**: [http://localhost:5173](http://localhost:5173)
+- App: http://localhost:5173  
+- Landing: `/` · Console: `/dashboard`  
 
-#### 4️⃣ Browser Extension Setup
+### 3. Extension
 
-1. Open **Google Chrome** → Navigate to `chrome://extensions/`
-2. Enable **Developer Mode** (toggle in top-right corner)
-3. Click **Load unpacked** → Select `extension/` folder from repository
-4. **Pin** the CyberShield AI extension to your toolbar
-5. In extension popup:
-   - Set API URL: `http://localhost:8000`
-   - Enter API Key: (from your `.env` file)
-   - Confirm backend connectivity
+1. Chrome → `chrome://extensions` → enable **Developer mode**  
+2. **Load unpacked** → select the `extension/` folder  
+3. Open the popup → set API URL to `http://localhost:8000/api` and your `API_KEY`  
 
 ---
 
-## 📚 Usage Guide
+## Environment Configuration
 
-### 🎯 For End Users
+### Backend (`backend/.env`)
 
-1. **Browse Normally**: CyberShield monitors all traffic automatically
-2. **Check Risk Scores**: Click the Quickball widget for instant risk assessment
-3. **Review Threats**: Hover over flagged URLs or images for details
-4. **Ask AI Assistant**: Use voice or text to ask about suspicious links
-5. **Get Recommendations**: Receive automated fixes for detected threats
+Use names that match the code (see `backend/.env.example`):
 
-### 👨‍💼 For Security Analysts
+| Variable | Description |
+| :--- | :--- |
+| `MONGODB_URI` | Mongo connection string |
+| `DB_NAME` | Database name (default `cybersentinel`) |
+| `GEMINI_API_KEYS` | One or more Gemini keys (comma-separated) |
+| `API_KEY` | Shared secret for `X-API-Key` |
+| `CORS_ORIGINS` | Comma-separated frontend origins |
+| `HF_API_URL` | Optional remote ML base URL (leave empty for Gemini-only) |
+| `USE_MOCK_AGENTS` | `false` for real Gemini responses |
 
-1. **Dashboard**: View real-time threats on interactive maps
-2. **Threat Diffing**: Compare scans over time to track trends
-3. **IOC Management**: Export indicators to SIEM systems
-4. **Create Rules**: Use the rule builder to customize threat detection
-5. **Generate Reports**: Export compliance & incident reports
+### Frontend (`frontend/.env`)
 
-### 🔐 For Administrators
+| Variable | Description |
+| :--- | :--- |
+| `VITE_API_URL` | Backend origin, e.g. `http://localhost:8000` |
+| `VITE_API_KEY` | Must match backend `API_KEY` |
+| `VITE_USE_MOCKS` | `false` for real API calls |
 
-1. **Governance Settings**: Configure deterministic rules
-2. **User Management**: Control roles and permissions
-3. **API Integration**: Connect external security tools
-4. **Audit Logs**: Monitor all platform activity
-5. **Threat Feeds**: Manage federated threat sharing
-
----
-
-## 🔌 API Reference
-
-### Key Endpoints
-
-```
-# Threat Analysis
-POST   /api/threat/analyze           - Analyze URL/content for threats
-GET    /api/threat/{id}              - Get threat details
-GET    /api/threats                  - List all threats with filters
-
-# Real-time Updates
-WS     /api/ws/threats               - WebSocket for live threat feed
-WS     /api/ws/dashboard             - Dashboard real-time updates
-
-# User & Security
-POST   /api/auth/login               - User authentication
-GET    /api/user/profile             - Get user details
-POST   /api/rules                    - Create custom security rules
-GET    /api/rules                    - List all rules
-
-# Intelligence
-GET    /api/intel/geographic         - Threat geographic data
-GET    /api/intel/indicators         - IOC feed
-POST   /api/intel/share              - Share threat indicators
-```
-
-📖 **Full Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+Production builds: set `VITE_*` on the host **before** build (Vite bakes them at compile time). See `frontend/.env.production.example`.
 
 ---
 
-## 🧪 Testing
+## API Overview
 
-```bash
-# Backend tests
-cd backend
-pytest tests/ -v
+Authenticated requests send header: `X-API-Key: <API_KEY>`
 
-# Frontend tests
-cd frontend
-npm run test
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| `POST` | `/api/analyze` | Main threat analysis (`type`, `content`, `source`, `tier`) |
+| `GET` | `/api/analyze/domain` | Domain reputation check |
+| `GET` | `/api/threats` | Paginated history (`threat_type`, `threat_level`) |
+| `GET` | `/api/threats/{id}` | Single event |
+| `GET` | `/api/stats` | Dashboard aggregates |
+| `POST` | `/api/chat` | Security assistant |
+| `POST` | `/api/report` | Manual reports from the extension |
+| `GET` | `/api/health` | Health check |
 
-# Integration tests
-npm run test:integration
-```
-
----
-
-## 📊 Performance Metrics
-
-| Metric | Target | Current |
-|--------|--------|---------|
-| **Tier 1 Detection** | <50ms | ✅ ~30ms |
-| **Tier 2 Detection** | <500ms | ✅ ~300ms |
-| **Tier 3 Detection** | <3s | ✅ ~2.5s |
-| **Dashboard Load** | <2s | ✅ ~1.2s |
-| **WebSocket Latency** | <100ms | ✅ ~50ms |
-| **Concurrent Users** | 10,000+ | ✅ Tested |
+Full interactive docs: http://localhost:8000/docs  
 
 ---
 
-## 🐛 Troubleshooting
+## Browser Extension
 
-### Backend Won't Start
-```bash
-# Check Python version
-python --version  # Should be 3.10+
+| Capability | Description |
+| :--- | :--- |
+| **Action Center** | Score, tier picker, URL/text scan, deepfake upload |
+| **Live detection** | Background / page monitoring with pause control |
+| **Results overlay** | Risk, confidence, explanation, remediation |
+| **Ask CyberSentinel** | Chat with optional page URL context |
+| **Dashboard link** | Jump to the full operator console |
 
-# Verify MongoDB is running
-mongo --version
-# If using Docker: docker ps | grep mongodb
-
-# Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
-```
-
-### Frontend Build Issues
-```bash
-# Clear node modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-
-# Clear Vite cache
-rm -rf .vite
-npm run dev
-```
-
-### Extension Not Connecting
-- ✅ Verify backend is running on port 8000
-- ✅ Check CORS configuration in backend `.env`
-- ✅ Confirm API Key matches extension settings
-- ✅ Try `chrome://extensions/` → Details → Update
-
-### Models Not Loading
-```bash
-# Clear Hugging Face cache
-rm -rf ~/.cache/huggingface/
-
-# Re-download on next startup
-python -c "from transformers import AutoModel; AutoModel.from_pretrained('distilbert-base-uncased')"
-```
+Brand asset used in the product UI: [`frontend/public/logo.png`](frontend/public/logo.png)
 
 ---
 
-## 🤝 Contributing
+## Deployment
 
-We welcome contributions! Please:
+Recommended free-tier path (Gemini-only):
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes and commit (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+| Component | Host |
+| :--- | :--- |
+| Database | MongoDB Atlas (M0) |
+| Backend | Render (root: `backend`) |
+| Frontend | Vercel (root: `frontend`) |
+| Extension | Load unpacked (or Chrome Web Store later) |
 
-### Development Setup
-```bash
-# Install dev dependencies
-cd backend && pip install -r requirements-dev.txt
-cd frontend && npm install --save-dev
+Hugging Face **Docker / Gradio Spaces** currently require a paid plan for new free accounts. Leave `HF_API_URL` empty unless you host ML elsewhere.
 
-# Run with hot reload
-npm run dev  # Frontend
-uvicorn app.main:app --reload  # Backend
-```
+Detailed guides:
+
+- [`free_tier_deployment_guide.md`](free_tier_deployment_guide.md)  
+- [`cybersentinel-ml-api/HF_UPLOAD_GUIDE.md`](cybersentinel-ml-api/HF_UPLOAD_GUIDE.md)  
 
 ---
 
-## 📄 License
+## Documentation
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🆘 Support & Documentation
-
-- **Issues**: [GitHub Issues](https://github.com/your-org/cybershield-ai/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/cybershield-ai/discussions)
-- **Docs**: [Full Documentation](./doc)
-- **API Swagger**: [http://localhost:8000/docs](http://localhost:8000/docs)
+| Document | Contents |
+| :--- | :--- |
+| [`doc/AI_Implementation_Overview.md`](doc/AI_Implementation_Overview.md) | AI tiers, services, schemas |
+| [`doc/Frontend_Backend_Extension_Implementation.md`](doc/Frontend_Backend_Extension_Implementation.md) | Full-stack implementation map |
+| [`doc/Architecture_Reference.md`](doc/Architecture_Reference.md) | Architecture reference |
+| [`doc/Current_Project_Gaps_And_Fixes.md`](doc/Current_Project_Gaps_And_Fixes.md) | Known gaps and fixes |
 
 ---
 
-<div align="center">
+## Core Developers
 
-**Made with ❤️ for cybersecurity**
+CyberSentinel is built and maintained by:
 
-[⭐ Star us on GitHub](https://github.com/your-org/cybershield-ai) | [🐦 Follow us](https://twitter.com/cybershieldai)
+| Developer | Role |
+| :--- | :--- |
+| **Farhan Sayed** | Core developer |
+| **Manas Sawant** | Core developer |
+| **Simran Singh** | Core developer |
 
-</div>
+<p align="center">
+  <img src="frontend/public/logo.png" alt="CyberSentinel" width="72" />
+</p>
+
+---
+
+## License
+
+This project is intended for educational and research use unless a separate license file is provided in the repository.
+
+---
+
+<p align="center">
+  <strong>CyberSentinel</strong> — Explainable protection for every page you open.<br />
+  <sub>Built by Farhan Sayed · Manas Sawant · Simran Singh</sub>
+</p>

@@ -21,7 +21,10 @@ class Settings(BaseSettings):
     PHISHSTATS_API_URL: str = "https://phishstats.info/api"
     SAFEPROMPT_API_KEY: str = ""
     HIVE_AI_API_KEY: str = ""
-    NVIDIA_API_KEY: str = "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"
+    NVIDIA_API_KEY: str = ""
+
+    # Hugging Face ML Space (Tier 1/2 remote inference)
+    HF_API_URL: str = ""
 
     # Security
     API_KEY: str = "dev-key"

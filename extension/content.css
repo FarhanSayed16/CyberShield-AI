@@ -189,10 +189,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border: 2px solid rgba(139, 92, 246, 0.5);
   border-radius: 50%;
   color: #F1F5F9;
   font-family: system-ui, -apple-system, sans-serif;
@@ -200,15 +200,16 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 15px rgba(139, 92, 246, 0.3);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: visible;
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   box-sizing: border-box;
 }
 
 #cybersentinel-quickball:hover {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 1);
   border-color: rgba(139, 92, 246, 0.8);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 25px rgba(139, 92, 246, 0.6);
+  transform: scale(1.05);
 }
 
 #cybersentinel-quickball.cs-qb-dragging {
@@ -224,25 +225,19 @@
 }
 
 .cs-qb-icon {
-  font-size: 20px;
+  font-size: 28px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  animation: cs-pulse-glow 2.5s infinite alternate;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   pointer-events: none; /* Let drag events hit parent */
 }
 
 .cs-qb-text {
   display: none; /* Hide old text payload, menu handles this now */
-}
-
-@keyframes cs-pulse-glow {
-  0% { filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.4)); opacity: 0.8; }
-  100% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 1)); opacity: 1; text-shadow: 0 0 10px rgba(139, 92, 246, 0.8); }
 }
 
 /* Quickball Action Menu */
@@ -344,35 +339,26 @@
 
 /* Safe State */
 #cybersentinel-quickball.quickball-safe {
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.3);
-}
-#cybersentinel-quickball.quickball-safe .cs-qb-icon {
-  animation: cs-pulse-safe 3s infinite alternate;
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.4);
 }
 
 /* Warning State */
 #cybersentinel-quickball.quickball-warning {
-  border-color: rgba(245, 158, 11, 0.6);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 15px rgba(245, 158, 11, 0.4);
-}
-#cybersentinel-quickball.quickball-warning .cs-qb-icon {
-  animation: cs-pulse-warn 1.5s infinite alternate;
+  border-color: rgba(245, 158, 11, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 20px rgba(245, 158, 11, 0.5);
 }
 
 /* Danger State */
 #cybersentinel-quickball.quickball-danger {
-  border-color: rgba(239, 68, 68, 0.8);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 25px rgba(239, 68, 68, 0.6);
+  border-color: rgba(239, 68, 68, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 25px rgba(239, 68, 68, 0.7);
   animation: cs-shake-danger 0.5s ease-in-out infinite alternate;
-}
-#cybersentinel-quickball.quickball-danger .cs-qb-icon {
-  animation: cs-pulse-danger 0.5s infinite alternate;
 }
 
 /* Scanning State */
 #cybersentinel-quickball.quickball-scanning {
-  border-color: rgba(56, 189, 248, 0.8);
+  border-color: rgba(56, 189, 248, 0.9);
 }
 #cybersentinel-quickball.quickball-scanning .cs-qb-icon {
   animation: cs-spin-scan 2s linear infinite;
