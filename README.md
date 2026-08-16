@@ -391,13 +391,12 @@ The Chrome extension provides real-time protection on every page you visit:
 
 ## 👥 Core Developers
 
-<table>
-<tr>
-<td align="center"><strong>Farhan Sayed</strong><br /><sub>Core Developer</sub></td>
-<td align="center"><strong>Manas Sawant</strong><br /><sub>Core Developer</sub></td>
-<td align="center"><strong>Simran Singh</strong><br /><sub>Core Developer</sub></td>
-</tr>
-</table>
+| Developer | Role |
+| :--- | :--- |
+| **Farhan Sayed** | Full-stack development, browser extension, frontend & backend |
+| **Manas Sawant** | AI/ML engine lead |
+| **Simran Singh** | ML, backend architecture, research & planning |
+| **Viraj Dalvi** | Overall advancements, co-developer |
 
 ---
 
@@ -413,6 +412,6 @@ This project is intended for **educational and research use** unless a separate 
 
 **CyberSentinel** — Explainable protection for every page you open.
 
-*Built with ❤️ by Farhan Sayed · Manas Sawant · Simran Singh*
+*Built by Farhan Sayed · Manas Sawant · Simran Singh · Viraj Dalvi*
 
 </div>

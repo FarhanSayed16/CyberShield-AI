@@ -24,6 +24,10 @@ import RuleIcon from '@mui/icons-material/Rule'
 import FolderZipIcon from '@mui/icons-material/FolderZip'
 import TuneIcon from '@mui/icons-material/Tune'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
+import CodeIcon from '@mui/icons-material/Code'
+import ScienceIcon from '@mui/icons-material/Science'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import GroupsIcon from '@mui/icons-material/Groups'
 import { useUIStore } from '../stores/useUIStore'
 import LandingHeroMock from '../features/landing/LandingHeroMock'
 import CyberSentinelLogo from '../components/brand/CyberSentinelLogo'
@@ -96,6 +100,48 @@ const EXTENSION_POINTS: { text: string; icon: ReactNode }[] = [
   { text: 'Quickball controls for manual scans with Tier 1, 2, or 3', icon: <LayersIcon fontSize="small" /> },
   { text: 'On-page overlay showing risk, explanation, and indicators', icon: <TravelExploreIcon fontSize="small" /> },
   { text: 'Security assistant chat with the current page URL as context', icon: <ChatBubbleOutlineIcon fontSize="small" /> },
+]
+
+const DEVELOPERS: {
+  initials: string
+  name: string
+  role: string
+  focus: string
+  body: string
+  icon: ReactNode
+}[] = [
+  {
+    initials: 'FS',
+    name: 'Farhan Sayed',
+    role: 'Full-stack & extension',
+    focus: 'Frontend · Backend · Chrome MV3',
+    body: 'Leads product development across the operator console and FastAPI backend, and built the Manifest V3 extension—Quickball, Action Center, and the live scan flow that ties browsing to the same analyze API.',
+    icon: <CodeIcon fontSize="small" />,
+  },
+  {
+    initials: 'MS',
+    name: 'Manas Sawant',
+    role: 'AI/ML engine lead',
+    focus: 'Detection pipeline · Gemini · Models',
+    body: 'Owns the core AI and ML engine: multi-tier routing, risk fusion, and explainable Gemini outputs that turn raw scores into indicators, narratives, and remediation operators can act on.',
+    icon: <ScienceIcon fontSize="small" />,
+  },
+  {
+    initials: 'SS',
+    name: 'Simran Singh',
+    role: 'ML & backend architecture',
+    focus: 'Research · Planning · Architecture',
+    body: 'Shapes ML and backend architecture, research, and planning—from how services, schemas, and persistence fit together to the detection design that keeps the pipeline coherent and maintainable.',
+    icon: <AccountTreeIcon fontSize="small" />,
+  },
+  {
+    initials: 'VD',
+    name: 'Viraj Dalvi',
+    role: 'Co-developer',
+    focus: 'Advancements · Integration',
+    body: 'Drives overall advancements as co-developer—strengthening the platform across features, integration, and iteration so CyberSentinel stays sharp as the product grows.',
+    icon: <GroupsIcon fontSize="small" />,
+  },
 ]
 
 const CONSOLE_POINTS: { title: string; desc: string; icon: ReactNode }[] = [
@@ -179,6 +225,7 @@ export default function LandingPage() {
             <a href="#pipeline" className="lp-nav-link text-sm font-medium text-theme-text-secondary">Pipeline</a>
             <a href="#extension" className="lp-nav-link text-sm font-medium text-theme-text-secondary">Extension</a>
             <a href="#console" className="lp-nav-link text-sm font-medium text-theme-text-secondary">Console</a>
+            <a href="#team" className="lp-nav-link text-sm font-medium text-theme-text-secondary">Team</a>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -512,6 +559,65 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Team */}
+      <section id="team" className="py-20 md:py-28 border-b border-theme-border scroll-mt-24">
+        <div className="max-w-6xl mx-auto px-5">
+          <motion.div
+            className="max-w-2xl mb-14"
+            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.45, ease }}
+          >
+            <p className="lp-label mb-3">Developers</p>
+            <h2 className="lp-section-title">Built by the CyberSentinel team</h2>
+            <p className="lp-prose mt-5">
+              Four people designed, engineered, and advanced this platform—from the browser extension and operator console
+              to the AI engine, backend architecture, and ongoing product direction.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 gap-5 md:gap-6">
+            {DEVELOPERS.map((person, idx) => (
+              <motion.article
+                key={person.initials}
+                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ delay: reduceMotion ? 0 : idx * 0.07, duration: 0.4, ease }}
+                className="lp-console-card border border-theme-border bg-theme-card p-7 flex flex-col"
+              >
+                <div className="flex items-start justify-between gap-4 mb-5">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span
+                      className="lp-icon-box !w-12 !h-12 lp-mono text-sm font-semibold"
+                      aria-hidden
+                    >
+                      {person.initials}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold text-theme-text tracking-tight leading-snug">
+                        {person.name}
+                      </h3>
+                      <p className="text-sm font-medium lp-signal-text mt-0.5">{person.role}</p>
+                    </div>
+                  </div>
+                  <span className="lp-icon-box !w-9 !h-9 shrink-0" aria-hidden>
+                    {person.icon}
+                  </span>
+                </div>
+                <p className="lp-mono text-[11px] text-theme-text-secondary mb-3 leading-relaxed">
+                  {person.focus}
+                </p>
+                <p className="text-[0.975rem] leading-relaxed text-theme-text-secondary flex-1">
+                  {person.body}
+                </p>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Closing CTA */}
       <section className="py-20 md:py-24 border-b border-theme-border">
         <motion.div
@@ -559,6 +665,7 @@ export default function LandingPage() {
             <a href="#pipeline" className="lp-nav-link">Pipeline</a>
             <a href="#extension" className="lp-nav-link">Extension</a>
             <a href="#console" className="lp-nav-link">Console</a>
+            <a href="#team" className="lp-nav-link">Team</a>
           </div>
           <p className="text-sm text-theme-text-secondary">© 2026 CyberShield AI</p>
         </div>
