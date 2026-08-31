@@ -41,44 +41,35 @@
 
 ## 📸 Product Preview
 
-<details>
-<summary><strong>🖥️ Landing Page</strong> — Click to expand</summary>
+### 🖥️ Landing Page
 <br />
 <p align="center">
   <img src="frontend/public/Preview_images/01-landing-hero.png" alt="CyberSentinel Landing Page" width="900" />
 </p>
 <p align="center"><em>Brand-first landing experience with explainable analysis mock and product CTAs</em></p>
-</details>
 
-<details>
-<summary><strong>📊 Operator Console — Live Scan</strong> — Click to expand</summary>
+### 📊 Operator Console — Live Scan
 <br />
 <p align="center">
   <img src="frontend/public/Preview_images/02-dashboard-scan.png" alt="Live Scan Dashboard" width="900" />
 </p>
 <p align="center"><em>Threat Analyzer with URL / text / prompt / deepfake inputs and engine tier selection</em></p>
-</details>
 
-<details>
-<summary><strong>📜 Threat History</strong> — Click to expand</summary>
+### 📜 Threat History
 <br />
 <p align="center">
   <img src="frontend/public/Preview_images/03-threat-history.png" alt="Threat History" width="900" />
 </p>
 <p align="center"><em>Filterable event log with risk scores, levels, compare mode, and CSV export</em></p>
-</details>
 
-<details>
-<summary><strong>📈 Security Analytics</strong> — Click to expand</summary>
+### 📈 Security Analytics
 <br />
 <p align="center">
   <img src="frontend/public/Preview_images/04-analytics.png" alt="Security Analytics" width="900" />
 </p>
 <p align="center"><em>KPI cards and attack timeline for operational visibility</em></p>
-</details>
 
-<details>
-<summary><strong>🧩 Browser Extension — Action Center</strong> — Click to expand</summary>
+### 🧩 Browser Extension — Action Center
 <br />
 <p align="center">
   <img src="frontend/public/Preview_images/05-extension-action-center.png" alt="Extension Action Center" width="420" />
@@ -86,7 +77,6 @@
   <img src="frontend/public/Preview_images/06-extension-results.png" alt="Extension Analysis Results" width="420" />
 </p>
 <p align="center"><em>In-page Action Center: tier selection, URL/text scan, deepfake upload, live detection, and explainable results</em></p>
-</details>
 
 ---
 
