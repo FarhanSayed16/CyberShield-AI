@@ -1,7 +1,8 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { useScanStore } from '../../stores/useScanStore'
+import { getHealth } from '../../api/endpoints'
 import LinkIcon from '@mui/icons-material/Link'
 import EmailIcon from '@mui/icons-material/Email'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
@@ -25,6 +26,13 @@ const EXAMPLES = {
 export default function ScanForm() {
   const { scanType, content, fileName, selectedTier, setType, setTier, setContent, setFileName, submitScan, isLoading } = useScanStore()
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [mlRemote, setMlRemote] = useState(false)
+
+  useEffect(() => {
+    getHealth()
+      .then((h) => setMlRemote(Boolean(h.ml_remote)))
+      .catch(() => setMlRemote(false))
+  }, [])
 
   useHotkeys('meta+k, ctrl+k', (e) => {
     e.preventDefault()
@@ -36,7 +44,14 @@ export default function ScanForm() {
     const file = acceptedFiles[0]
     
     const reader = new FileReader()
-    if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+    if (file.type.startsWith('video/')) {
+      setType('video')
+      setFileName(file.name)
+      reader.onload = (e) => {
+        if (e.target?.result) setContent(e.target.result.toString())
+      }
+      reader.readAsDataURL(file)
+    } else if (file.type.startsWith('image/')) {
       setType('image')
       setFileName(file.name)
       // Read as base64 data URL so the backend can decode it for deepfake analysis
@@ -54,11 +69,12 @@ export default function ScanForm() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
-    noClick: scanType !== 'image',
+    noClick: scanType !== 'image' && scanType !== 'video',
     noKeyboard: true
   })
   
-  const activeTypeInfo = SCAN_TYPES.find(t => t.id === scanType) || SCAN_TYPES[0]
+  const activeTypeInfo = SCAN_TYPES.find(t => t.id === scanType) || (scanType === 'video' ? SCAN_TYPES.find(t => t.id === 'image') : null) || SCAN_TYPES[0]
+  const isMediaScan = scanType === 'image' || scanType === 'video'
 
   const handleExampleClick = () => {
     // @ts-ignore
@@ -127,7 +143,7 @@ export default function ScanForm() {
           </div>
         )}
         
-        {scanType === 'image' ? (
+        {isMediaScan ? (
           <div className={`flex-1 min-h-[220px] bg-theme-surface/30 flex flex-col items-center justify-center text-theme-text-secondary transition-all duration-300 pointer-events-auto group ${isLoading ? 'opacity-50' : 'hover:bg-theme-surface/50 cursor-pointer'}`}>
             <div className="p-4 rounded-xl bg-theme-surface border border-theme-border group-hover:border-primary/30 mb-4 transition-colors">
               <ImageIcon fontSize="large" className="group-hover:text-primary transition-colors duration-300 scale-125" />
@@ -150,18 +166,31 @@ export default function ScanForm() {
 
       {/* Tiers Option */}
       <div className="flex flex-col gap-2.5 mb-8 relative z-10">
-        <label className="text-[10px] font-bold text-theme-text-secondary uppercase tracking-[0.2em] px-2">Engine Selection</label>
+        <label className="text-[10px] font-bold text-theme-text-secondary uppercase tracking-[0.2em] px-2">
+          Engine Selection {mlRemote ? '(hybrid ML)' : '(Gemini-only)'}
+        </label>
         <div className="flex gap-2 p-1 bg-theme-surface/30 border border-theme-border rounded-xl">
           {(['auto', 'tier1', 'tier2', 'tier3'] as const).map(tier => {
             const labels: Record<string, string> = {
               auto: 'Auto',
-              tier1: 'Local ML',
-              tier2: 'Vision',
+              tier1: mlRemote ? 'Remote ML' : 'Heuristics',
+              tier2: mlRemote ? 'Remote ML+' : 'Enrichment',
               tier3: 'Gemini'
+            };
+            const titles: Record<string, string> = {
+              auto: 'Fuse available tiers; Gemini carries explainability',
+              tier1: mlRemote
+                ? 'Requires HF_API_URL / cybersentinel-ml-api'
+                : 'Lexical triage only — remote ML not configured',
+              tier2: mlRemote
+                ? 'Remote ML + external intel when available'
+                : 'External intel only when keys set; no remote classifier',
+              tier3: 'Explainable Gemini structured JSON',
             };
             return (
               <button
                 key={tier}
+                title={titles[tier]}
                 onClick={(e) => {
                   e.stopPropagation();
                   setTier(tier);
@@ -177,11 +206,16 @@ export default function ScanForm() {
             )
           })}
         </div>
+        {!mlRemote && (
+          <p className="text-[10px] text-theme-text-secondary px-1">
+            Default free deploy is Gemini-only. Set backend <code className="font-mono">HF_API_URL</code> to enable remote Tier 1/2 classifiers.
+          </p>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between gap-4 mt-auto relative z-10">
-        {scanType !== 'image' ? (
+        {scanType !== 'image' && scanType !== 'video' ? (
           <button
             onClick={handleExampleClick}
             className="text-xs font-medium text-primary hover:text-primary-hover transition-colors underline decoration-primary/30 underline-offset-4"
@@ -192,7 +226,7 @@ export default function ScanForm() {
 
         <button
           onClick={submitScan}
-          disabled={isLoading || (!content && scanType !== 'image')}
+          disabled={isLoading || (!content && !isMediaScan)}
           className="btn-primary px-8 py-2.5 rounded-xl text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-display"
         >
           {isLoading ? 'Scanning...' : 'Scan Now'}

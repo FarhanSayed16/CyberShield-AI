@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getStats } from '../../api/endpoints'
 import type { StatsResponse } from '../../api/types'
 import {
@@ -10,9 +10,9 @@ import {
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 const COLORS = {
-  'Safe': '#10B981', // safe
-  'Suspicious': '#F59E0B', // suspicious
-  'High Risk': '#EF4444', // high-risk
+  'Safe': '#10B981',
+  'Suspicious': '#F59E0B',
+  'High Risk': '#EF4444',
 }
 
 const TYPE_COLORS = ['#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#10B981']
@@ -34,21 +34,58 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null
 }
 
+function StatusPanel({
+  title,
+  message,
+  onRetry,
+}: {
+  title: string
+  message: string
+  onRetry?: () => void
+}) {
+  return (
+    <div className="h-96 flex flex-col justify-center items-center gap-3 text-center px-6">
+      <p className="text-sm font-bold text-theme-text">{title}</p>
+      <p className="text-sm text-theme-text-secondary max-w-md">{message}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-theme-border bg-theme-surface hover:bg-theme-border text-theme-text transition-colors"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function ThreatCharts() {
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    getStats().then(data => {
-      setStats(data)
-      setLoading(false)
-    }).catch(err => {
-      console.error(err)
-      setLoading(false)
-    })
+  const load = useCallback(() => {
+    setLoading(true)
+    setError(null)
+    getStats()
+      .then((data) => {
+        setStats(data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error(err)
+        setStats(null)
+        setError('Could not load analytics charts.')
+        setLoading(false)
+      })
   }, [])
 
-  if (loading || !stats) {
+  useEffect(() => {
+    load()
+  }, [load])
+
+  if (loading) {
     return (
       <div className="h-96 flex justify-center items-center">
         <LoadingSpinner />
@@ -56,7 +93,19 @@ export default function ThreatCharts() {
     )
   }
 
-  // Transform data for charts
+  if (error) {
+    return <StatusPanel title="Charts unavailable" message={error} onRetry={load} />
+  }
+
+  if (!stats || stats.total_threats === 0) {
+    return (
+      <StatusPanel
+        title="No data yet"
+        message="Run a few scans from the dashboard to populate threat charts."
+      />
+    )
+  }
+
   const timelineData = (stats.last_24h?.timestamps || []).map((time, i) => ({
     time,
     threats: stats.last_24h.counts[i] || 0
@@ -73,7 +122,6 @@ export default function ThreatCharts() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
       
-      {/* Timeline Chart */}
       <div className="glass-card lg:col-span-2 h-[400px] flex flex-col p-6 border-t-[3px] border-t-primary relative overflow-hidden group hover:shadow-sm transition-all duration-500">
         <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-6 flex items-center gap-2 relative z-10">
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -111,7 +159,6 @@ export default function ThreatCharts() {
         </div>
       </div>
 
-      {/* Risk Level Distribution */}
       <div className="glass-card h-[350px] flex flex-col p-6 border-t-[3px] border-t-suspicious relative overflow-hidden group hover:shadow-sm transition-all duration-500">
         <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-6 flex items-center gap-2 relative z-10">
           <span className="w-2 h-2 rounded-full bg-suspicious animate-pulse" />
@@ -138,7 +185,6 @@ export default function ThreatCharts() {
         </div>
       </div>
 
-      {/* Threat Type Breakdown */}
       <div className="glass-card h-[350px] flex flex-col p-6 border-t-[3px] border-t-high-risk relative overflow-hidden group hover:shadow-sm transition-all duration-500">
         <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-2 flex items-center gap-2 relative z-10">
           <span className="w-2 h-2 rounded-full bg-high-risk animate-pulse" />

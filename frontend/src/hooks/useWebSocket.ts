@@ -1,28 +1,36 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useThreatsStore } from '../stores/useThreatsStore'
+import { useUIStore } from '../stores/useUIStore'
 import toast from 'react-hot-toast'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/ws/threats'
+const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/ws/threats'
+const API_KEY = import.meta.env.VITE_API_KEY || 'dev-key'
+
+function buildWsUrl(): string {
+  const sep = WS_BASE.includes('?') ? '&' : '?'
+  return `${WS_BASE}${sep}api_key=${encodeURIComponent(API_KEY)}`
+}
 
 /**
- * useWebSocket — connects to backend WebSocket and auto-updates threat store
- * Handles auto-reconnect with exponential backoff.
+ * useWebSocket — connects to backend WebSocket and auto-updates threat store.
+ * Mount only under console routes (not landing).
  */
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<number | null>(null)
   const reconnectDelay = useRef(1000)
   const fetchThreats = useThreatsStore(state => state.fetchThreats)
+  const bumpUnreadHighRisk = useUIStore(state => state.bumpUnreadHighRisk)
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-    const ws = new WebSocket(WS_URL)
+    const ws = new WebSocket(buildWsUrl())
     wsRef.current = ws
 
     ws.onopen = () => {
       console.log('[WS] Connected to CyberSentinel live feed')
-      reconnectDelay.current = 1000 // Reset backoff on successful connect
+      reconnectDelay.current = 1000
     }
 
     ws.onmessage = (event) => {
@@ -30,13 +38,18 @@ export function useWebSocket() {
         const msg = JSON.parse(event.data)
         if (msg.type === 'new_threat') {
           const { payload } = msg
-          // Refresh the threats store
           fetchThreats(true)
-          // Show live toast
-          const icon = payload.threat_level === 'Safe' ? '✅' : 
+          if (payload.threat_level === 'High Risk') {
+            bumpUnreadHighRisk()
+          }
+          const icon = payload.threat_level === 'Safe' ? '✅' :
                        payload.threat_level === 'High Risk' ? '🚨' : '⚠️'
           toast(`${icon} ${payload.threat_type}: ${payload.explanation?.substring(0, 80)}...`, {
-            style: { background: '#1E293B', color: '#F8FAFC', border: '1px solid #334155' },
+            style: {
+              background: 'rgb(var(--color-card))',
+              color: 'rgb(var(--color-text-primary))',
+              border: '1px solid rgb(var(--color-border))',
+            },
             duration: 5000
           })
         }
@@ -53,7 +66,7 @@ export function useWebSocket() {
     ws.onerror = () => {
       ws.close()
     }
-  }, [fetchThreats])
+  }, [fetchThreats, bumpUnreadHighRisk])
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimer.current) return
@@ -64,7 +77,6 @@ export function useWebSocket() {
     }, reconnectDelay.current)
   }, [connect])
 
-  // Send periodic pings to keep connection alive
   useEffect(() => {
     connect()
 
