@@ -140,7 +140,14 @@ venv.bak/
 *.swp
 *.swo
 
-# Models (Optional but recommended if large)
-# models/
-# *.pkl
+# Models — keep inference weights only under cybersentinel-ml-api/models/
+# Prefer Git LFS for new large .pt / .pkl outside that folder.
+doc/backend/**/*.pkl
+doc/backend/**/*.pt
+**/url_ml_model.pkl
+
+# Optional: uncomment to force LFS-tracked binaries elsewhere
 # *.pt
+# *.pkl
+# !cybersentinel-ml-api/models/**/*.pt
+# !cybersentinel-ml-api/models/**/*.pkl

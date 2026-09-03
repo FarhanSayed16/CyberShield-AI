@@ -15,7 +15,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com)
 [![Chrome](https://img.shields.io/badge/Extension-Manifest%20V3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/)
 
-[**Live Demo**](#quick-start) · [**Download Extension**](#-browser-extension) · [**Documentation**](#-documentation) · [**Deploy**](#-deployment)
+[**Quick Start**](#quick-start) · [**Download Extension**](#-browser-extension) · [**Documentation**](#-documentation) · [**Deploy**](#-deployment)
 
 </div>
 
@@ -82,26 +82,28 @@
 
 ## ⚙️ Multi-Tier Detection Engine
 
-CyberSentinel's core innovation is a **three-tier detection pipeline** that balances speed, depth, and explainability:
+CyberSentinel uses a **three-tier detection pipeline**. The default free deploy is **Gemini-only** (`pipeline_mode: gemini_only`). Optional remote classifiers unlock when you set `HF_API_URL` to a hosted `cybersentinel-ml-api` (`pipeline_mode: hybrid`).
+
+**Phase 4 decision:** **Option A — Gemini-only by default** (recommended for free-tier hosting). Remote ML remains optional.
 
 ```
 ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
 │   TIER 1    │ ───► │   TIER 2    │ ───► │   TIER 3    │
-│ Local Triage│      │ Enrichment  │      │ Explainable │
+│ Fast triage │      │ Enrichment  │      │ Explainable │
 │             │      │             │      │  Decision   │
 │ Heuristics  │      │ Safe Browse │      │   Gemini    │
-│ Custom ML   │      │ VirusTotal  │      │ Structured  │
-│ <50ms       │      │ Intel Fusion│      │    JSON     │
+│ Optional ML │      │ VirusTotal  │      │ Structured  │
+│             │      │ Optional ML │      │    JSON     │
 └─────────────┘      └─────────────┘      └─────────────┘
 ```
 
-| Tier | Purpose | Technology | Speed |
-| :---: | :--- | :--- | :---: |
-| **T1** | Fast local triage | Lexical heuristics, custom ML classifiers | ⚡ <50ms |
-| **T2** | Threat enrichment | Safe Browsing, VirusTotal, external intel fusion | 🔄 ~500ms |
-| **T3** | Explainability | Google Gemini structured JSON output | 🧠 ~2s |
+| Tier | Purpose | Technology | Notes |
+| :---: | :--- | :--- | :--- |
+| **T1** | Fast triage | Lexical heuristics; optional remote ML via `HF_API_URL` | Not “always-on local custom ML” on free hosts |
+| **T2** | Enrichment | Safe Browsing / VirusTotal when keyed; optional remote ML | |
+| **T3** | Explainability | Google Gemini structured JSON | Primary path for Gemini-only mode |
 
-> Users can run **Auto** mode (all tiers fused) or force a single tier from the dashboard or extension Quickball.
+> Users can run **Auto** (recommended) or force a single tier from the dashboard or extension. Geographic analytics and domain reputation on free tier are **heuristic / simulated** signals, not live WHOIS maps.
 
 ---
 
@@ -160,7 +162,7 @@ CyberSentinel's core innovation is a **three-tier detection pipeline** that bala
 </tr>
 <tr>
 <td>🤖 <strong>AI Engine</strong></td>
-<td>Google Gemini (<code>gemini-2.5-flash</code>) · Optional enrichment APIs</td>
+<td>Google Gemini (<code>gemini-2.5-flash-lite</code>) · Optional remote ML API</td>
 </tr>
 <tr>
 <td>🧩 <strong>Extension</strong></td>
@@ -230,8 +232,8 @@ CyberShield AI/
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/CyberShield-AI.git
-cd "CyberShield AI"
+git clone https://github.com/FarhanSayed16/CyberShield-AI.git
+cd CyberShield-AI
 ```
 
 ### Step 2: Start the Backend
@@ -292,6 +294,7 @@ npm run dev
 | `DB_NAME` | — | Database name (default: `cybersentinel`) |
 | `GEMINI_API_KEYS` | ✅ | One or more Gemini keys, comma-separated |
 | `API_KEY` | ✅ | Shared secret for `X-API-Key` header auth |
+| `ENVIRONMENT` | — | Set `production` to refuse weak `API_KEY` and gate agents |
 | `CORS_ORIGINS` | ✅ | Comma-separated frontend origins |
 | `HF_API_URL` | — | Optional remote ML base URL (leave empty for Gemini-only) |
 | `USE_MOCK_AGENTS` | — | Set `false` for real Gemini responses |
@@ -305,6 +308,7 @@ npm run dev
 | :--- | :---: | :--- |
 | `VITE_API_URL` | ✅ | Backend origin, e.g. `http://localhost:8000` |
 | `VITE_API_KEY` | ✅ | Must match backend `API_KEY` |
+| `VITE_WS_URL` | — | WebSocket threats URL, e.g. `ws://localhost:8000/api/ws/threats` |
 | `VITE_USE_MOCKS` | — | Set `false` for real API calls |
 
 > ⚠️ **Production:** `VITE_*` vars are baked in at **build time**. Set them on your host before running `npm run build`. See `frontend/.env.production.example`.
@@ -370,12 +374,16 @@ The Chrome extension provides real-time protection on every page you visit:
 
 | Document | Description |
 | :--- | :--- |
+| 📘 [Phased Implementation Plan](doc/Phased_Implementation_Plan.md) | Phases 1–5 tracking (correctness → release) |
+| 📘 [Full Project Audit](doc/Full_Project_Audit_Fixes_And_Improvements.md) | Canonical gaps / fixes (IDs) |
+| 📘 [Free-Tier Deployment Guide](doc/free_tier_deployment_guide.md) | Atlas → Render → Vercel → extension checklist |
 | 📘 [AI Implementation Overview](doc/AI_Implementation_Overview.md) | AI tiers, services, and schemas |
 | 📘 [Full-Stack Implementation Map](doc/Frontend_Backend_Extension_Implementation.md) | Frontend, backend, and extension architecture |
-| 📘 [Architecture Reference](doc/Architecture_Reference.md) | System architecture deep-dive |
-| 📘 [AI Engine Architecture](doc/CyberSentinel_AI_Engine_Architecture.md) | Detailed AI pipeline documentation |
-| 📘 [Project Gaps & Fixes](doc/Current_Project_Gaps_And_Fixes.md) | Known issues and planned fixes |
-| 📘 [Enhancement Roadmap](doc/enhancement_roadmap.md) | Future feature roadmap |
+| 📘 [ML Upload Guide](cybersentinel-ml-api/HF_UPLOAD_GUIDE.md) | Optional remote ML (`HF_API_URL`) |
+| 📘 [Chrome Web Store Checklist](extension/CHROME_WEB_STORE_CHECKLIST.md) | Extension packaging prep |
+| 📘 [Project Gaps (superseded)](doc/Current_Project_Gaps_And_Fixes.md) | Points to audit + plan |
+
+> **Product surface:** Operator console covers scan, history, analytics, email, audit, and rules. `/api/intel` is experimental API-only (no console UI). `/api/agent/*` is debug-only and disabled when `ENVIRONMENT=production`.
 
 ---
 
