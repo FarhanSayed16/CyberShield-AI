@@ -1,11 +1,13 @@
 const DEFAULT_API_URL = 'http://localhost:8000/api';
 const DEFAULT_API_KEY = 'dev-key';
+const DEFAULT_DASHBOARD_URL = 'http://localhost:5173';
 
 async function getApiConfig() {
-  const result = await chrome.storage.local.get(['apiBaseUrl', 'apiKey']);
+  const result = await chrome.storage.local.get(['apiBaseUrl', 'apiKey', 'dashboardBaseUrl']);
   return {
     apiUrl: result.apiBaseUrl || DEFAULT_API_URL,
-    apiKey: result.apiKey || DEFAULT_API_KEY
+    apiKey: result.apiKey || DEFAULT_API_KEY,
+    dashboardBaseUrl: (result.dashboardBaseUrl || DEFAULT_DASHBOARD_URL).replace(/\/$/, '')
   };
 }
 
@@ -60,19 +62,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // API Config Logic
   const apiUrlInput = document.getElementById('api-url-input');
   const apiKeyInput = document.getElementById('api-key-input');
+  const dashboardUrlInput = document.getElementById('dashboard-url-input');
   const saveApiBtn = document.getElementById('save-api-btn');
   const saveApiMsg = document.getElementById('save-api-msg');
+  const openDashboardLink = document.getElementById('open-dashboard-link');
 
   getApiConfig().then(config => {
     apiUrlInput.value = config.apiUrl;
     apiKeyInput.value = config.apiKey;
+    if (dashboardUrlInput) dashboardUrlInput.value = config.dashboardBaseUrl;
+    if (openDashboardLink) openDashboardLink.href = config.dashboardBaseUrl;
   });
 
   saveApiBtn.addEventListener('click', () => {
     const apiBaseUrl = apiUrlInput.value.trim() || DEFAULT_API_URL;
     const apiKey = apiKeyInput.value.trim() || DEFAULT_API_KEY;
+    const dashboardBaseUrl = (dashboardUrlInput?.value.trim() || DEFAULT_DASHBOARD_URL).replace(/\/$/, '');
     
-    chrome.storage.local.set({ apiBaseUrl, apiKey }, () => {
+    chrome.storage.local.set({ apiBaseUrl, apiKey, dashboardBaseUrl }, () => {
+      if (openDashboardLink) openDashboardLink.href = dashboardBaseUrl;
       saveApiMsg.style.display = 'block';
       setTimeout(() => saveApiMsg.style.display = 'none', 2000);
       fetchLiveStats(); // Refresh stats with new config

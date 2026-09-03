@@ -102,6 +102,13 @@
     .tabs { display: flex; border-bottom: 1px solid #334155; margin-bottom: 16px; }
     .tab-btn { flex: 1; padding: 10px; background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 13px; font-weight: 600; border-bottom: 2px solid transparent; }
     .tab-btn.active { color: #8B5CF6; border-bottom-color: #8B5CF6; }
+    .tab-btn:focus-visible,
+    .btn:focus-visible,
+    input:focus-visible,
+    button:focus-visible {
+      outline: 2px solid #A78BFA;
+      outline-offset: 2px;
+    }
     
     .network-log { background: #1E293B; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 11px; }
     .log-url { color: #E2E8F0; word-break: break-all; margin-bottom: 4px; font-family: monospace; }
@@ -123,8 +130,8 @@
   
   <div class="content">
     <div class="tabs">
-      <button class="tab-btn active" data-target="tab-status">Status</button>
-      <button class="tab-btn" id="network-tab-btn" data-target="tab-network">Network Logs</button>
+      <button type="button" class="tab-btn active" data-target="tab-status" aria-label="Status tab">Status</button>
+      <button type="button" class="tab-btn" id="network-tab-btn" data-target="tab-network" aria-label="Network logs tab">Network Logs</button>
     </div>
     
     <div id="tab-status" class="tab-pane" style="display: block;">
@@ -142,8 +149,8 @@
             <h4>Auto-block High Risk</h4>
             <p>Prevent loading malicious URLs</p>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="block-toggle" checked>
+          <label class="switch" aria-label="Auto-block high risk URLs">
+            <input type="checkbox" id="block-toggle" checked aria-label="Auto-block high risk URLs">
             <span class="slider"></span>
           </label>
         </div>
@@ -152,19 +159,23 @@
             <h4>Context Menu Scan</h4>
             <p>Right-click text to analyze</p>
           </div>
-          <label class="switch">
-            <input type="checkbox" checked disabled>
+          <label class="switch" aria-label="Context menu scan (always on)">
+            <input type="checkbox" checked disabled aria-label="Context menu scan always enabled">
             <span class="slider"></span>
           </label>
         </div>
         <div class="setting-item" style="flex-direction: column; align-items: stretch;">
           <div class="setting-info" style="margin-bottom: 8px;">
             <h4>API Configuration</h4>
-            <p>Backend endpoint and key</p>
+            <p>Backend URL, API key, and dashboard URL</p>
           </div>
-          <input type="text" id="api-url-input" placeholder="http://localhost:8000/api" style="width: 100%; margin-top: 4px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;">
-          <input type="password" id="api-key-input" placeholder="Enter API Key" style="width: 100%; margin-top: 6px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;">
-          <button id="save-api-btn" style="margin-top: 8px; width: 100%; padding: 6px; background: #475569; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">Save Settings</button>
+          <label for="api-url-input" style="font-size: 10px; color: #94A3B8; margin-top: 4px;">API URL</label>
+          <input type="text" id="api-url-input" aria-label="Backend API URL" placeholder="http://localhost:8000/api" style="width: 100%; margin-top: 2px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;">
+          <label for="api-key-input" style="font-size: 10px; color: #94A3B8; margin-top: 6px;">API key</label>
+          <input type="password" id="api-key-input" aria-label="API key" placeholder="Enter API Key" style="width: 100%; margin-top: 2px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;">
+          <label for="dashboard-url-input" style="font-size: 10px; color: #94A3B8; margin-top: 6px;">Dashboard URL</label>
+          <input type="text" id="dashboard-url-input" aria-label="Dashboard base URL" placeholder="http://localhost:5173" style="width: 100%; margin-top: 2px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;" title="Dashboard base URL">
+          <button id="save-api-btn" type="button" aria-label="Save API settings" style="margin-top: 8px; width: 100%; padding: 6px; background: #475569; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">Save Settings</button>
           <div id="save-api-msg" style="color: #10B981; font-size: 10px; margin-top: 4px; text-align: center; display: none;">Saved successfully!</div>
         </div>
       </div>
@@ -173,7 +184,7 @@
     <div id="tab-network" class="tab-pane" style="display: none; max-height: 350px; overflow-y: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <span style="font-size: 11px; color: #94A3B8;">Outbound requests (this tab)</span>
-        <button id="refresh-network-btn" style="background: none; border: none; color: #8B5CF6; cursor: pointer; font-size: 11px;">Refresh</button>
+        <button type="button" id="refresh-network-btn" aria-label="Refresh network logs" style="background: none; border: none; color: #8B5CF6; cursor: pointer; font-size: 11px;">Refresh</button>
       </div>
       <div id="network-log-container">
         <div style="text-align: center; padding: 20px; color: #64748B; font-size: 12px;">Loading logs...</div>
@@ -182,7 +193,7 @@
   </div>
   
   <div class="footer">
-    <a href="http://localhost:5173" target="_blank" class="btn">Open Full Dashboard</a>
+    <a href="http://localhost:5173" target="_blank" class="btn" id="open-dashboard-link">Open Full Dashboard</a>
   </div>
 
   <script src="popup.js"></script>

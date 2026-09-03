@@ -1,9 +1,12 @@
 // Background Service Worker
 
-// Background Service Worker
-
 const DEFAULT_API_URL = 'http://localhost:8000/api';
 const DEFAULT_API_KEY = 'dev-key';
+const SCAN_COOLDOWN_MS = 8000;
+
+const lastScanByTab = {};
+const lastScanByUrl = {};
+let rateLimitedUntil = 0;
 
 async function getApiConfig() {
   const result = await chrome.storage.local.get(['apiBaseUrl', 'apiKey']);
@@ -11,6 +14,39 @@ async function getApiConfig() {
     apiUrl: result.apiBaseUrl || DEFAULT_API_URL,
     apiKey: result.apiKey || DEFAULT_API_KEY
   };
+}
+
+function canScan(tabId, url) {
+  const now = Date.now();
+  if (now < rateLimitedUntil) return false;
+  if (tabId != null && lastScanByTab[tabId] && (now - lastScanByTab[tabId]) < SCAN_COOLDOWN_MS) {
+    return false;
+  }
+  if (url && lastScanByUrl[url] && (now - lastScanByUrl[url]) < SCAN_COOLDOWN_MS) {
+    return false;
+  }
+  return true;
+}
+
+function markScan(tabId, url) {
+  const now = Date.now();
+  if (tabId != null) lastScanByTab[tabId] = now;
+  if (url) lastScanByUrl[url] = now;
+}
+
+function noteRateLimit(response) {
+  if (response && response.status === 429) {
+    const retry = parseInt(response.headers.get('Retry-After') || '30', 10);
+    rateLimitedUntil = Date.now() + Math.max(retry, 10) * 1000;
+    return true;
+  }
+  return false;
+}
+
+function resolveTier(tier) {
+  if (!tier || tier === 'auto') return 'auto';
+  if (String(tier).startsWith('tier')) return String(tier);
+  return 'tier' + tier;
 }
 
 // Known-safe domains that should NOT trigger auto-scan
@@ -67,7 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "manualScanFromQuickball") {
     const tabId = sender.tab.id;
     chrome.tabs.sendMessage(tabId, { action: "showScanOverlay" });
-    const pageTier = "tier" + (request.tier || "3");
+    const pageTier = resolveTier(request.tier || 'auto');
     analyzeThreatWithTier(request.url, "url", tabId, pageTier);
   } else if (request.action === "pageTextForScan") {
     // Auto-scan: content script extracted page text, analyze it
@@ -84,12 +120,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const tabId = sender.tab.id;
     const typeMap = { "url": "url", "text": "text", "prompt": "prompt" };
     const inputType = typeMap[request.scanType] || "text";
-    const tierStr = "tier" + (request.tier || "3");
+    const tierStr = resolveTier(request.tier || 'auto');
     analyzeThreatWithTier(request.content, inputType, tabId, tierStr);
   } else if (request.action === "manualFileScan") {
     // File upload for deepfake detection
     const tabId = sender.tab.id;
-    const fileTierStr = "tier" + (request.tier || "3");
+    const fileTierStr = resolveTier(request.tier || 'auto');
     analyzeThreatWithTier(request.fileData, "image", tabId, fileTierStr);
   } else if (request.action === "askAiAssistant") {
     const tabId = sender.tab.id;
@@ -178,6 +214,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Real-time URL navigation check — pre-navigate
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId === 0 && !details.url.includes('chrome://') && !details.url.includes('chrome-extension://') && !isSafeDomain(details.url)) {
+    if (!canScan(details.tabId, details.url)) return;
     chrome.storage.local.get(['safetySettings'], (result) => {
       const settings = result.safetySettings || { blockHighRisk: true };
       if (settings.blockHighRisk) {
@@ -190,6 +227,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 // Auto-scan page text after page finishes loading
 chrome.webNavigation.onCompleted.addListener((details) => {
   if (details.frameId === 0 && !details.url.includes('chrome://') && !details.url.includes('chrome-extension://') && !isSafeDomain(details.url)) {
+    if (!canScan(details.tabId, details.url + '#page-text')) return;
     // Tell content script to extract visible text and send it back
     setTimeout(() => {
       chrome.tabs.sendMessage(details.tabId, { action: "extractAndScanPageText" }).catch(() => {});
@@ -199,6 +237,8 @@ chrome.webNavigation.onCompleted.addListener((details) => {
 
 // Talk to FastAPI Backend — URL quick check
 async function analyzeURLQuick(url, tabId) {
+  if (!canScan(tabId, url)) return;
+  markScan(tabId, url);
   try {
     const { apiUrl, apiKey } = await getApiConfig();
     const response = await fetch(`${apiUrl}/analyze`, {
@@ -206,6 +246,16 @@ async function analyzeURLQuick(url, tabId) {
       headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
       body: JSON.stringify({ source: 'extension', type: 'url', content: url })
     });
+
+    if (noteRateLimit(response)) {
+      chrome.tabs.sendMessage(tabId, {
+        action: "toast",
+        title: "Rate limited",
+        message: "Too many scans — backing off briefly.",
+        type: "warning"
+      }).catch(() => {});
+      return;
+    }
     
     const domainReputation = await checkDomainReputation(url);
 
@@ -239,6 +289,9 @@ async function analyzeURLQuick(url, tabId) {
 }
 
 async function analyzeThreat(content, type, tabId) {
+  const scanKey = `${type}:${String(content).slice(0, 200)}`;
+  if (!canScan(tabId, scanKey)) return;
+  markScan(tabId, scanKey);
   try {
     const { apiUrl, apiKey } = await getApiConfig();
     const response = await fetch(`${apiUrl}/analyze`, {
@@ -246,6 +299,14 @@ async function analyzeThreat(content, type, tabId) {
       headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
       body: JSON.stringify({ source: 'extension', type: type, content: content })
     });
+
+    if (noteRateLimit(response)) {
+      chrome.tabs.sendMessage(tabId, {
+        action: "scanOverlayError",
+        error: "Too many requests — please wait and try again."
+      }).catch(() => {});
+      return;
+    }
     
     if (response.ok) {
       const data = await response.json();
@@ -275,6 +336,14 @@ async function analyzeThreat(content, type, tabId) {
 
 // Analyze with explicit tier selection (from Quickball scan controls)
 async function analyzeThreatWithTier(content, type, tabId, tier) {
+  // Manual scans always allowed but still respect global 429 backoff
+  if (Date.now() < rateLimitedUntil) {
+    chrome.tabs.sendMessage(tabId, {
+      action: "scanOverlayError",
+      error: "Too many requests — please wait and try again."
+    }).catch(() => {});
+    return;
+  }
   try {
     const { apiUrl, apiKey } = await getApiConfig();
     const response = await fetch(`${apiUrl}/analyze`, {
@@ -282,6 +351,14 @@ async function analyzeThreatWithTier(content, type, tabId, tier) {
       headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
       body: JSON.stringify({ source: 'extension', type: type, content: content, tier: tier })
     });
+
+    if (noteRateLimit(response)) {
+      chrome.tabs.sendMessage(tabId, {
+        action: "scanOverlayError",
+        error: "Too many requests — please wait and try again."
+      }).catch(() => {});
+      return;
+    }
     
     if (response.ok) {
       const data = await response.json();

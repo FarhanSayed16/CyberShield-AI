@@ -20,6 +20,9 @@ import LandingPage from './pages/LandingPage'
 
 function InternalApp() {
   const location = useLocation()
+  // Live feed + assistant only on console routes (F5)
+  useWebSocket()
+
   return (
     <AppLayout>
       <AnimatePresence mode="wait">
@@ -33,6 +36,7 @@ function InternalApp() {
           <Route path="/rules" element={<RulesPage />} />
         </Routes>
       </AnimatePresence>
+      <AssistantWidget />
     </AppLayout>
   )
 }
@@ -40,9 +44,6 @@ function InternalApp() {
 function App() {
   const themeMode = useUIStore(state => state.themeMode)
   const dynamicTheme = useMemo(() => getTheme(themeMode), [themeMode])
-  
-  // Connect to live WebSocket feed
-  useWebSocket()
   
   return (
     <ThemeProvider theme={dynamicTheme}>
@@ -52,7 +53,6 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/*" element={<InternalApp />} />
       </Routes>
-      <AssistantWidget />
     </ThemeProvider>
   )
 }

@@ -1,6 +1,45 @@
 // Content Script injected into pages
 
 const OVERLAY_ID = 'cybersentinel-overlay-root';
+const DEFAULT_DASHBOARD_BASE = 'http://localhost:5173';
+let _dashboardBaseUrl = DEFAULT_DASHBOARD_BASE;
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function loadDashboardBaseUrl() {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(['dashboardBaseUrl'], (result) => {
+        _dashboardBaseUrl = (result.dashboardBaseUrl || DEFAULT_DASHBOARD_BASE).replace(/\/$/, '');
+        resolve(_dashboardBaseUrl);
+      });
+    } catch {
+      resolve(_dashboardBaseUrl);
+    }
+  });
+}
+
+function getDashboardBaseUrl() {
+  return _dashboardBaseUrl || DEFAULT_DASHBOARD_BASE;
+}
+
+try {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.dashboardBaseUrl) {
+      _dashboardBaseUrl = (changes.dashboardBaseUrl.newValue || DEFAULT_DASHBOARD_BASE).replace(/\/$/, '');
+    }
+  });
+} catch (_) { /* ignore */ }
+
+loadDashboardBaseUrl();
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -48,7 +87,7 @@ function createOverlay(text, type) {
       </div>
       <div class="cs-body">
         <p class="cs-analyzing-text">Analyzing ${type === 'url' ? 'link' : 'text'} for threats</p>
-        <p class="cs-snippet">"${displaySnippet}"</p>
+        <p class="cs-snippet">"${escapeHtml(displaySnippet)}"</p>
         <div class="cs-loader-bar">
           <div class="cs-loader-fill"></div>
         </div>
@@ -73,6 +112,17 @@ function updateOverlayWithResult(result) {
     result.risk_score >= 80 ? '#EF4444' : 
     result.risk_score >= 50 ? '#F59E0B' : '#3B82F6';
 
+  const threatLevel = escapeHtml(result.threat_level);
+  const threatType = escapeHtml((result.threat_type || '').replace('_', ' '));
+  const explanation = escapeHtml(result.explanation || '');
+  const indicators = (result.indicators || []).map(ind =>
+    `<span class="cs-ind-chip">🔸 ${escapeHtml(ind)}</span>`
+  ).join('');
+  const actions = (result.recommended_actions || []).map(act =>
+    `<div class="cs-act">✓ ${escapeHtml(act)}</div>`
+  ).join('');
+  const reportUrl = `${getDashboardBaseUrl()}/threats?id=${encodeURIComponent(result.id || '')}`;
+
   container.innerHTML = `
     <div class="cs-glass-panel" style="border-top: 4px solid ${riskColor}">
       <div class="cs-header">
@@ -83,26 +133,20 @@ function updateOverlayWithResult(result) {
       <div class="cs-body">
         <div class="cs-result-header">
           <span class="cs-pill" style="background: ${riskColor}33; color: ${riskColor}; border: 1px solid ${riskColor}66;">
-            ${result.threat_level}
+            ${threatLevel}
           </span>
-          <span class="cs-threat-type">${result.threat_type.replace('_', ' ')}</span>
+          <span class="cs-threat-type">${threatType}</span>
         </div>
         
-        <p class="cs-explanation">${result.explanation}</p>
+        <p class="cs-explanation">${explanation}</p>
         
-        ${result.indicators.length > 0 ? `
-          <div class="cs-indicators">
-            ${result.indicators.map(ind => `<span class="cs-ind-chip">🔸 ${ind}</span>`).join('')}
-          </div>
-        ` : ''}
+        ${indicators ? `<div class="cs-indicators">${indicators}</div>` : ''}
         
-        <div class="cs-actions">
-          ${result.recommended_actions.map(act => `<div class="cs-act">✓ ${act}</div>`).join('')}
-        </div>
+        <div class="cs-actions">${actions}</div>
       </div>
       <div class="cs-footer">
-        Score: <strong style="color: ${riskColor}">${result.risk_score}/100</strong>
-        <a href="http://localhost:5173/threats?id=${result.id}" target="_blank" class="cs-link">View Full Report</a>
+        Score: <strong style="color: ${riskColor}">${Number(result.risk_score) || 0}/100</strong>
+        <a href="${escapeHtml(reportUrl)}" target="_blank" class="cs-link">View Full Report</a>
       </div>
     </div>
   `;
@@ -124,7 +168,7 @@ function updateOverlayWithError(errorMsg) {
         <button class="cs-close-btn" id="cs-close-overlay">×</button>
       </div>
       <div class="cs-body">
-        <p style="color: #F87171">${errorMsg}</p>
+        <p style="color: #F87171">${escapeHtml(errorMsg)}</p>
       </div>
     </div>
   `;
@@ -141,14 +185,18 @@ function createFullPageBlocker(data) {
     font-family: system-ui, sans-serif; text-align: center; p-6;
   `;
   
+  const threatType = escapeHtml((data.threat_type || 'threat').replace('_', ' '));
+  const explanation = escapeHtml(data.explanation || '');
+  const riskScore = Number(data.risk_score) || 0;
+
   blocker.innerHTML = `
     <div style="max-width: 600px; padding: 40px; border-radius: 16px; background: #1E293B; border: 1px solid #EF444433; box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.25);">
       <div style="font-size: 64px; margin-bottom: 24px;">⛔</div>
       <h1 style="color: #EF4444; font-size: 28px; font-weight: bold; margin-bottom: 16px;">Critical Security Threat Prevented</h1>
-      <p style="color: #94A3B8; margin-bottom: 24px;">CyberSentinel AI blocked this page because it was identified as a <strong>${data.threat_type.replace('_', ' ')}</strong> site with a risk score of ${data.risk_score}/100.</p>
+      <p style="color: #94A3B8; margin-bottom: 24px;">CyberSentinel AI blocked this page because it was identified as a <strong>${threatType}</strong> site with a risk score of ${riskScore}/100.</p>
       
       <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #EF4444; padding: 16px; text-align: left; margin-bottom: 32px; font-size: 14px; border-radius: 4px;">
-        <strong>AI Analysis:</strong> ${data.explanation}
+        <strong>AI Analysis:</strong> ${explanation}
       </div>
       
       <div style="display: flex; gap: 16px; justify-content: center;">
@@ -203,9 +251,10 @@ function injectQuickball() {
     <div class="cs-control-group">
       <label class="cs-control-label">⚙ AI Engine Tier</label>
       <select class="cs-tier-select" id="cs-tier-select">
-        <option value="1">Tier 1 — Local ML</option>
-        <option value="2">Tier 2 — HuggingFace</option>
-        <option value="3" selected>Tier 3 — Gemini AI</option>
+        <option value="auto" selected>Auto — Gemini + optional ML</option>
+        <option value="1">Tier 1 — Heuristics / remote ML</option>
+        <option value="2">Tier 2 — Enrichment / remote ML</option>
+        <option value="3">Tier 3 — Gemini AI</option>
       </select>
     </div>
 
@@ -407,7 +456,7 @@ function injectQuickball() {
 
   // Dashboard
   document.getElementById('cs-qb-btn-dashboard').addEventListener('click', () => {
-    window.open('http://localhost:5173', '_blank');
+    window.open(getDashboardBaseUrl(), '_blank');
     toggleMenu();
   });
 
@@ -608,29 +657,29 @@ function renderInlineResults(result) {
   // KPI Cards
   document.getElementById('cs-kpi-row').innerHTML = `
     <div class="cs-kpi-card" style="border-color: ${riskColor}33;">
-      <div class="cs-kpi-value" style="color: ${riskColor};">${result.risk_score}</div>
+      <div class="cs-kpi-value" style="color: ${riskColor};">${Number(result.risk_score) || 0}</div>
       <div class="cs-kpi-label">Risk Score</div>
     </div>
     <div class="cs-kpi-card" style="border-color: ${riskColor}33;">
-      <div class="cs-kpi-value" style="color: ${riskColor};">${result.threat_level}</div>
+      <div class="cs-kpi-value" style="color: ${riskColor};">${escapeHtml(result.threat_level)}</div>
       <div class="cs-kpi-label">Threat Level</div>
     </div>
     <div class="cs-kpi-card">
-      <div class="cs-kpi-value">${confidence}%</div>
+      <div class="cs-kpi-value">${escapeHtml(String(confidence))}%</div>
       <div class="cs-kpi-label">Confidence</div>
     </div>
   `;
 
   // Explanation
   document.getElementById('cs-results-explanation').innerHTML = `
-    <div class="cs-results-type" style="color: ${riskColor};">${(result.threat_type || 'benign').replace('_', ' ')}</div>
-    <p>${result.explanation || 'No detailed explanation available.'}</p>
+    <div class="cs-results-type" style="color: ${riskColor};">${escapeHtml((result.threat_type || 'benign').replace('_', ' '))}</div>
+    <p>${escapeHtml(result.explanation || 'No detailed explanation available.')}</p>
   `;
 
   // Indicators
   const indContainer = document.getElementById('cs-results-indicators');
   if (result.indicators && result.indicators.length > 0) {
-    indContainer.innerHTML = result.indicators.map(i => `<span class="cs-ind-chip">🔸 ${i}</span>`).join('');
+    indContainer.innerHTML = result.indicators.map(i => `<span class="cs-ind-chip">🔸 ${escapeHtml(i)}</span>`).join('');
     indContainer.style.display = 'flex';
   } else {
     indContainer.style.display = 'none';
@@ -639,7 +688,7 @@ function renderInlineResults(result) {
   // Actions
   const actContainer = document.getElementById('cs-results-actions');
   if (result.recommended_actions && result.recommended_actions.length > 0) {
-    actContainer.innerHTML = `<div class="cs-actions">${result.recommended_actions.map(a => `<div class="cs-act">✓ ${a}</div>`).join('')}</div>`;
+    actContainer.innerHTML = `<div class="cs-actions">${result.recommended_actions.map(a => `<div class="cs-act">✓ ${escapeHtml(a)}</div>`).join('')}</div>`;
     actContainer.style.display = 'block';
   } else {
     actContainer.style.display = 'none';
@@ -655,7 +704,7 @@ function renderInlineResults(result) {
 
   // View Full Report link
   const fullLink = document.getElementById('cs-results-view-full');
-  fullLink.href = `http://localhost:5173/threats?id=${result.id || ''}`;
+  fullLink.href = `${getDashboardBaseUrl()}/threats?id=${encodeURIComponent(result.id || '')}`;
 }
 
 function renderAdvancedAnalysis(result, container) {
@@ -666,28 +715,28 @@ function renderAdvancedAnalysis(result, container) {
     html += `<div class="cs-adv-section"><div class="cs-adv-title">🚨 Threat Indicators</div><div class="cs-adv-pills">`;
     adv.indicators_of_compromise.forEach(ioc => {
       const sevColor = ioc.severity === 'Critical' ? '#EF4444' : ioc.severity === 'High' ? '#F97316' : '#EAB308';
-      html += `<span class="cs-adv-pill" style="border-color:${sevColor}55; color:${sevColor}"><strong style="color:#CBD5E1">${ioc.type}:</strong> ${ioc.value}</span>`;
+      html += `<span class="cs-adv-pill" style="border-color:${sevColor}55; color:${sevColor}"><strong style="color:#CBD5E1">${escapeHtml(ioc.type)}:</strong> ${escapeHtml(ioc.value)}</span>`;
     });
     html += `</div></div>`;
     if (adv.mitigation_steps && adv.mitigation_steps.length > 0) {
       html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">🛡️ Mitigation</div><ul class="cs-adv-list">`;
-      adv.mitigation_steps.forEach(step => html += `<li>${step}</li>`);
+      adv.mitigation_steps.forEach(step => html += `<li>${escapeHtml(step)}</li>`);
       html += `</ul></div>`;
     }
   } else if (result.threat_type === 'deepfake' && adv.detected_artifacts) {
     if (adv.detected_artifacts.length > 0) {
       html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">❌ Synthetic Artifacts</div><ul class="cs-adv-list cs-adv-list-bad">`;
-      adv.detected_artifacts.forEach(art => html += `<li>${art}</li>`);
+      adv.detected_artifacts.forEach(art => html += `<li>${escapeHtml(art)}</li>`);
       html += `</ul></div>`;
     }
     if (adv.authenticity_signals && adv.authenticity_signals.length > 0) {
       html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">✅ Human Signals</div><ul class="cs-adv-list cs-adv-list-good">`;
-      adv.authenticity_signals.forEach(sig => html += `<li>${sig}</li>`);
+      adv.authenticity_signals.forEach(sig => html += `<li>${escapeHtml(sig)}</li>`);
       html += `</ul></div>`;
     }
   } else if (result.threat_type === 'prompt_injection' && adv.malicious_payloads) {
     html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">☠️ Payloads Blocked</div><div class="cs-adv-code-blocks">`;
-    adv.malicious_payloads.forEach(payload => html += `<div class="cs-adv-code-snippet">${payload}</div>`);
+    adv.malicious_payloads.forEach(payload => html += `<div class="cs-adv-code-snippet">${escapeHtml(payload)}</div>`);
     html += `</div></div>`;
   }
 
@@ -747,14 +796,14 @@ function updateQuickballWithResult(result) {
           adv.indicators_of_compromise.forEach(ioc => {
               const sevColor = ioc.severity === 'Critical' ? '#EF4444' : ioc.severity === 'High' ? '#F97316' : '#EAB308';
               html += `<span class="cs-adv-pill" style="border-color:${sevColor}55; color:${sevColor}">
-                        <strong style="color:#CBD5E1">${ioc.type}:</strong> ${ioc.value}
+                        <strong style="color:#CBD5E1">${escapeHtml(ioc.type)}:</strong> ${escapeHtml(ioc.value)}
                        </span>`;
           });
           html += `</div></div>`;
           
           if (adv.mitigation_steps && adv.mitigation_steps.length > 0) {
               html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">🛡️ Mitigation Commands</div><ul class="cs-adv-list">`;
-              adv.mitigation_steps.forEach(step => html += `<li>${step}</li>`);
+              adv.mitigation_steps.forEach(step => html += `<li>${escapeHtml(step)}</li>`);
               html += `</ul></div>`;
           }
       }
@@ -762,12 +811,12 @@ function updateQuickballWithResult(result) {
       else if (result.threat_type === 'deepfake' && adv.detected_artifacts) {
           if (adv.detected_artifacts.length > 0) {
               html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">❌ Synthetic Artifacts Found</div><ul class="cs-adv-list cs-adv-list-bad">`;
-              adv.detected_artifacts.forEach(art => html += `<li>${art}</li>`);
+              adv.detected_artifacts.forEach(art => html += `<li>${escapeHtml(art)}</li>`);
               html += `</ul></div>`;
           }
           if (adv.authenticity_signals && adv.authenticity_signals.length > 0) {
               html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">✅ Human Signals Detected</div><ul class="cs-adv-list cs-adv-list-good">`;
-              adv.authenticity_signals.forEach(sig => html += `<li>${sig}</li>`);
+              adv.authenticity_signals.forEach(sig => html += `<li>${escapeHtml(sig)}</li>`);
               html += `</ul></div>`;
           }
       }
@@ -775,7 +824,7 @@ function updateQuickballWithResult(result) {
       else if (result.threat_type === 'prompt_injection' && adv.malicious_payloads) {
           html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">☠️ Malicious Payloads Blocked</div><div class="cs-adv-code-blocks">`;
           adv.malicious_payloads.forEach(payload => {
-              html += `<div class="cs-adv-code-snippet">${payload}</div>`;
+              html += `<div class="cs-adv-code-snippet">${escapeHtml(payload)}</div>`;
           });
           html += `</div></div>`;
       }
@@ -783,7 +832,7 @@ function updateQuickballWithResult(result) {
       // Behavior Anomaly Payload Rendering
       else if (result.threat_type === 'behavior_anomaly' && adv.anomalies_detected) {
           html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#F59E0B">⚠️ Baseline Deviations</div><ul class="cs-adv-list cs-adv-list-warn">`;
-          adv.anomalies_detected.forEach(anom => html += `<li>${anom}</li>`);
+          adv.anomalies_detected.forEach(anom => html += `<li>${escapeHtml(anom)}</li>`);
           html += `</ul></div>`;
       }
       
@@ -827,10 +876,20 @@ function handleAiResponse(text) {
   const thinkingNode = Array.from(chatHistory.children).find(n => n.innerText === 'Thinking...');
   if (thinkingNode) thinkingNode.remove();
 
-  // Parse markdown-ish text simply
+  // Parse **bold** safely without injecting raw HTML (S5)
   const div = document.createElement('div');
   div.className = 'cs-msg-ai';
-  div.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  const parts = String(text || '').split(/(\*\*[^*]+\*\*)/g);
+  parts.forEach((part) => {
+    const m = part.match(/^\*\*([^*]+)\*\*$/);
+    if (m) {
+      const strong = document.createElement('strong');
+      strong.textContent = m[1];
+      div.appendChild(strong);
+    } else if (part) {
+      div.appendChild(document.createTextNode(part));
+    }
+  });
   chatHistory.appendChild(div);
   chatHistory.scrollTop = chatHistory.scrollHeight;
 }
@@ -842,7 +901,7 @@ function addTimelineEvent(text) {
   const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
   const div = document.createElement('div');
   div.className = 'cs-soc-entry';
-  div.innerHTML = `<span class="cs-soc-time">${time}</span><span class="cs-soc-event">${text}</span>`;
+  div.innerHTML = `<span class="cs-soc-time">${escapeHtml(time)}</span><span class="cs-soc-event">${escapeHtml(text)}</span>`;
   timeline.prepend(div);
 }
 
@@ -863,18 +922,23 @@ function showToast(title, message, type = 'warning') {
   toast.style.borderLeftColor = color;
 
   const ignoreId = `cs-toast-ignore-${Date.now()}`;
+  const detailsId = `cs-toast-details-${Date.now()}`;
   toast.innerHTML = `
     <div class="cs-toast-header" style="color:${color}">
-      <span>${icon}</span> ${title}
+      <span>${icon}</span> ${escapeHtml(title)}
     </div>
-    <div class="cs-toast-body">${message}</div>
+    <div class="cs-toast-body">${escapeHtml(message)}</div>
     <div class="cs-toast-actions">
       <button class="cs-toast-btn" id="${ignoreId}">Ignore</button>
-      <button class="cs-toast-btn cs-toast-btn-primary" style="background:${color}" onclick="window.open('http://localhost:5173', '_blank')">View Details</button>
+      <button class="cs-toast-btn cs-toast-btn-primary" style="background:${color}" id="${detailsId}">View Details</button>
     </div>
   `;
 
   container.appendChild(toast);
+
+  document.getElementById(detailsId).addEventListener('click', () => {
+    window.open(getDashboardBaseUrl(), '_blank');
+  });
 
   // Wire Ignore button to Smart Whitelist System
   document.getElementById(ignoreId).addEventListener('click', () => {
@@ -1073,12 +1137,14 @@ startDOMScanner();
 
 // ── Bridge for Dashboard (React) ↔ Extension ────────────────────────
 window.addEventListener("message", (event) => {
-  // Only accept commands if the page is our dashboard
-  if (window.location.href.startsWith("http://localhost:5173") && event.origin === "http://localhost:5173") {
-    if (event.data.type === "CYBER_SENTINEL_HISTORY_SCAN") {
-      chrome.runtime.sendMessage({ action: "scanHistory", limit: event.data.limit || 50 }, (response) => {
-        window.postMessage({ type: "CYBER_SENTINEL_HISTORY_RESULT", data: response }, "http://localhost:5173");
-      });
-    }
+  const dashboardOrigin = getDashboardBaseUrl();
+  // Only accept commands from the configured dashboard origin (E4)
+  if (!window.location.href.startsWith(dashboardOrigin) || event.origin !== dashboardOrigin) {
+    return;
+  }
+  if (event.data.type === "CYBER_SENTINEL_HISTORY_SCAN") {
+    chrome.runtime.sendMessage({ action: "scanHistory", limit: event.data.limit || 50 }, (response) => {
+      window.postMessage({ type: "CYBER_SENTINEL_HISTORY_RESULT", data: response }, dashboardOrigin);
+    });
   }
 });
