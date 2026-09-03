@@ -1,6 +1,6 @@
 export interface AnalyzeRequest {
-  source: 'extension' | 'dashboard'
-  type: 'url' | 'text' | 'prompt' | 'image' | 'video' | 'anomaly'
+  source: 'extension' | 'dashboard' | 'history_audit'
+  type: 'url' | 'text' | 'prompt' | 'image' | 'video' | 'anomaly' | 'email'
   tier?: 'tier1' | 'tier2' | 'tier3' | 'auto'
   content: string
 }
@@ -22,8 +22,8 @@ export interface ExternalFlags {
 
 export interface AnalyzeResponse {
   id: string
-  type: 'url' | 'text' | 'prompt' | 'image' | 'video'
-  source: 'extension' | 'dashboard'
+  type: 'url' | 'text' | 'prompt' | 'image' | 'video' | 'anomaly' | 'email'
+  source: 'extension' | 'dashboard' | 'history_audit'
   raw_input_snippet: string
   threat_type: ThreatType
   risk_score: number // 0-100
@@ -65,4 +65,90 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   response: string
+}
+
+export interface HealthResponse {
+  status: string
+  db: string
+  agents: string
+  version: string
+  ml_remote?: boolean
+  pipeline_mode?: 'gemini_only' | 'hybrid' | string
+}
+
+export interface CustomRuleCondition {
+  field: string
+  operator: string
+  value: string
+}
+
+export interface CustomRuleAction {
+  override_score: number | null
+  override_level: string | null
+  add_indicator: string | null
+}
+
+export interface CustomRule {
+  id?: string
+  name: string
+  description?: string
+  is_active: boolean
+  condition: CustomRuleCondition
+  action: CustomRuleAction
+}
+
+export interface BatchAnalyzeRequest {
+  urls: string[]
+  source?: 'extension' | 'dashboard' | 'history_audit'
+}
+
+export interface BatchAnalyzeItem {
+  url: string
+  threat_type: string
+  risk_score: number
+  threat_level: string
+  indicators: string[]
+  recommended_actions?: string[]
+}
+
+export interface EmailAnalyzeResponse {
+  id: string
+  type: 'email'
+  source: string
+  threat_type: string
+  risk_score: number
+  threat_level: string
+  confidence: number
+  indicators: string[]
+  explanation: string
+  key_points: string[]
+  recommended_actions: string[]
+  severity_label?: string
+  email_analysis: {
+    sender: string
+    reply_to: string
+    subject: string
+    date: string
+    auth: { spf: string; dkim: string; dmarc: string }
+    urls: string[]
+    total_urls: number
+    attachments: { filename: string; content_type: string; size: number }[]
+    flags: string[]
+    body_preview: string
+  }
+  created_at: string
+}
+
+export interface GeoRegion {
+  name: string
+  lat: number
+  lng: number
+  count: number
+  avg_risk: number
+}
+
+export interface TimelineAnalytics {
+  timestamps: string[]
+  counts: number[]
+  by_level: { Safe: number; Suspicious: number; 'High Risk': number }[]
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getStats } from '../../api/endpoints'
 import type { StatsResponse } from '../../api/types'
 import SecurityIcon from '@mui/icons-material/Security'
@@ -9,24 +9,30 @@ import TimelineIcon from '@mui/icons-material/Timeline'
 export default function KpiCards() {
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchStats = () => {
-      getStats().then(data => {
+  const fetchStats = useCallback(() => {
+    getStats()
+      .then((data) => {
         setStats(data)
-        setLoading(false)
-      }).catch(err => {
-        console.error('Failed to load stats', err)
+        setError(null)
         setLoading(false)
       })
-    }
+      .catch((err) => {
+        console.error('Failed to load stats', err)
+        setError('Could not load KPI metrics.')
+        setLoading(false)
+      })
+  }, [])
 
+  useEffect(() => {
+    setLoading(true)
     fetchStats()
     const id = setInterval(fetchStats, 15000)
     return () => clearInterval(id)
-  }, [])
+  }, [fetchStats])
 
-  if (loading || !stats) {
+  if (loading && !stats) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => <div key={i} className="h-32 rounded-2xl skeleton border border-theme-border" />)}
@@ -34,32 +40,55 @@ export default function KpiCards() {
     )
   }
 
+  if (error && !stats) {
+    return (
+      <div className="glass-card p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-theme-border">
+        <div>
+          <p className="text-sm font-bold text-theme-text">KPIs unavailable</p>
+          <p className="text-sm text-theme-text-secondary mt-1">{error}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true)
+            fetchStats()
+          }}
+          className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-theme-border bg-theme-surface hover:bg-theme-border text-theme-text transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  if (!stats) return null
+
   const kpis = [
     {
       label: 'Total Scans',
       value: stats.total_threats,
-      icon: <TimelineIcon sx={{ color: '#3B82F6' }} />, // primary
+      icon: <TimelineIcon sx={{ color: '#3B82F6' }} />,
       border: 'border-primary',
-      trend: 'All-time total'
+      trend: stats.total_threats === 0 ? 'No scans yet' : 'All-time total'
     },
     {
       label: 'High Risk Blocked',
       value: stats.by_level['High Risk'] || 0,
-      icon: <WarningAmberIcon sx={{ color: '#EF4444' }} />, // high-risk
+      icon: <WarningAmberIcon sx={{ color: '#EF4444' }} />,
       border: 'border-high-risk',
       trend: 'Threats intercepted'
     },
     {
       label: 'Phishing Attacks',
       value: stats.by_type['phishing'] || 0,
-      icon: <SecurityIcon sx={{ color: '#F59E0B' }} />, // suspicious
+      icon: <SecurityIcon sx={{ color: '#F59E0B' }} />,
       border: 'border-suspicious',
       trend: 'Detected by AI engine'
     },
     {
       label: 'Safe Content',
       value: stats.by_level['Safe'] || 0,
-      icon: <ShieldIcon sx={{ color: '#10B981' }} />, // safe
+      icon: <ShieldIcon sx={{ color: '#10B981' }} />,
       border: 'border-safe',
       trend: 'Verified safe'
     }
@@ -67,6 +96,12 @@ export default function KpiCards() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+      {error && (
+        <div className="sm:col-span-2 lg:col-span-4 text-xs text-suspicious font-medium">
+          Live refresh failed — showing last successful metrics.{' '}
+          <button type="button" className="underline" onClick={fetchStats}>Retry</button>
+        </div>
+      )}
       {kpis.map((kpi, i) => (
         <div 
           key={i} 
