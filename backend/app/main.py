@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from app.core.config import settings
 from app.core.logging import setup_logging, request_id_var
@@ -25,10 +26,21 @@ from app.api.v1.routes_ws import router as ws_router
 from app.api.v1.routes_rules import router as rules_router
 from app.api.v1.routes_intel import router as intel_router
 
+_WEAK_API_KEYS = frozenset({"", "dev-key", "changeme", "secret", "password", "api-key"})
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     setup_logging()
+    env = (settings.ENVIRONMENT or "development").strip().lower()
+    if env == "production" and settings.API_KEY.strip().lower() in _WEAK_API_KEYS:
+        logger.error(
+            "Refusing to start: API_KEY is weak/default while ENVIRONMENT=production. "
+            "Set a strong random API_KEY."
+        )
+        raise RuntimeError("Weak API_KEY not allowed when ENVIRONMENT=production")
+
     await init_db()
     await ai_manager.initialize()
     yield
@@ -69,7 +81,9 @@ app.include_router(analyze_router, prefix="/api", tags=["Analyze"])
 app.include_router(threats_router, prefix="/api", tags=["Threats"])
 app.include_router(stats_router, prefix="/api", tags=["Stats"])
 app.include_router(health_router, prefix="/api", tags=["Health"])
-app.include_router(agents_router, prefix="/api", tags=["Agents (Debug)"])
+# Debug agent endpoints disabled in production (S4)
+if (settings.ENVIRONMENT or "development").strip().lower() != "production":
+    app.include_router(agents_router, prefix="/api", tags=["Agents (Debug)"])
 app.include_router(chat_router, prefix="/api", tags=["Chat"])
 app.include_router(report_router, prefix="/api", tags=["Reports"])
 app.include_router(ws_router, prefix="/api", tags=["WebSocket"])

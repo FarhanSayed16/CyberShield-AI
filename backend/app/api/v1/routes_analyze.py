@@ -5,6 +5,7 @@ POST /api/analyze — Main threat analysis endpoint.
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from typing import Literal
 from loguru import logger
 
 from app.api.deps import require_auth
@@ -13,7 +14,8 @@ from app.db import crud_threats
 from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse
 from app.services.threat_router import route_request
 from app.services.rule_engine import rule_engine
-from app.services.remediation import get_remediation_steps
+from app.services.remediation import merge_remediation_actions
+from app.services.risk_engine import map_threat_level, map_severity
 
 router = APIRouter()
 
@@ -62,12 +64,15 @@ async def analyze_threat(
             decision.indicators.extend(added_inds)
             decision.indicators = list(set(decision.indicators)) # Deduplicate
 
-        # C5: Automated Remediation Suggestions
-        decision.recommended_actions = get_remediation_steps(
-            decision.threat_type, decision.risk_score, decision.indicators
+        # Merge template remediation with Gemini/agent recommended actions (I4)
+        decision.recommended_actions = merge_remediation_actions(
+            decision.recommended_actions,
+            decision.threat_type,
+            decision.risk_score,
+            decision.indicators,
         )
 
-        # Build DB record
+        # Build DB record (include advanced_analysis for history/detail C4)
         db_data = {
             "type": request.type,
             "source": request.source,
@@ -82,6 +87,7 @@ async def analyze_threat(
             "recommended_actions": decision.recommended_actions,
             "external_flags": decision.external_flags,
             "severity_label": decision.severity_label,
+            "advanced_analysis": decision.advanced_analysis,
         }
 
         # Persist to MongoDB
@@ -153,14 +159,16 @@ async def check_domain_reputation(
             vt_score=vt_score,
             is_suspicious_tld=is_suspicious_tld,
             ssl_valid=url.startswith("https"),
+            simulated=True,
+            note="Heuristic demo signal — not live WHOIS/VirusTotal",
         )
     except Exception as e:
         logger.error(f"Domain check failed: {e}")
         raise HTTPException(status_code=500, detail="Domain check failed")
 
 class BatchAnalyzeRequest(BaseModel):
-    urls: list[str] = Field(..., max_items=100)
-    source: str = "history_audit"
+    urls: list[str] = Field(..., max_items=50)
+    source: Literal["extension", "dashboard", "history_audit"] = "history_audit"
 
 @router.post("/analyze/batch")
 async def analyze_batch(
@@ -170,45 +178,52 @@ async def analyze_batch(
     """
     Perform a batch analysis of multiple URLs (used for History Audit).
     Uses the fast logical `route_request` internally to avoid LLM rate limits for bulk jobs.
+    Concurrency is capped to avoid stampeding Gemini/ML backends (S7).
     """
     import asyncio
+
+    sem = asyncio.Semaphore(5)
     
     async def analyze_single(url: str):
-        try:
-            decision = await route_request("url", url, request.source, "tier1")
-            
-            # Evaluate Custom Rules (B4)
-            rule_data = {"type": "url", "source": request.source, "url": url, "domain": url.split('/')[2] if "://" in url else "", "threat_type": decision.threat_type}
-            ms, ml, a_ind = await rule_engine.evaluate_rules(rule_data, decision.risk_score, decision.threat_level)
-            decision.risk_score = ms
-            decision.threat_level = ml
-            if a_ind:
-                decision.indicators.extend(a_ind)
-                decision.indicators = list(set(decision.indicators))
+        async with sem:
+            try:
+                decision = await route_request("url", url, request.source, "tier1")
                 
-            remediation_actions = get_remediation_steps(
-                decision.threat_type, decision.risk_score, decision.indicators
-            )
+                # Evaluate Custom Rules (B4)
+                rule_data = {"type": "url", "source": request.source, "url": url, "domain": url.split('/')[2] if "://" in url else "", "threat_type": decision.threat_type}
+                ms, ml, a_ind = await rule_engine.evaluate_rules(rule_data, decision.risk_score, decision.threat_level)
+                decision.risk_score = ms
+                decision.threat_level = ml
+                if a_ind:
+                    decision.indicators.extend(a_ind)
+                    decision.indicators = list(set(decision.indicators))
+                    
+                remediation_actions = merge_remediation_actions(
+                    decision.recommended_actions,
+                    decision.threat_type,
+                    decision.risk_score,
+                    decision.indicators,
+                )
 
-            return {
-                "url": url,
-                "threat_type": decision.threat_type,
-                "risk_score": decision.risk_score,
-                "threat_level": decision.threat_level,
-                "indicators": decision.indicators,
-                "recommended_actions": remediation_actions
-            }
-        except Exception as e:
-            logger.error(f"Batch analysis failed for {url}: {e}")
-            return {
-                "url": url,
-                "threat_type": "unknown",
-                "risk_score": 0,
-                "threat_level": "Unknown",
-                "indicators": [f"Error: {e}"]
-            }
+                return {
+                    "url": url,
+                    "threat_type": decision.threat_type,
+                    "risk_score": decision.risk_score,
+                    "threat_level": decision.threat_level,
+                    "indicators": decision.indicators,
+                    "recommended_actions": remediation_actions
+                }
+            except Exception as e:
+                logger.error(f"Batch analysis failed for {url}: {e}")
+                return {
+                    "url": url,
+                    "threat_type": "unknown",
+                    "risk_score": 0,
+                    "threat_level": "Unknown",
+                    "indicators": ["Analysis failed"],
+                }
             
-    # Run all URLs concurrently
+    # Run all URLs concurrently (bounded by semaphore)
     tasks = [analyze_single(url) for url in request.urls if url.strip()]
     results = await asyncio.gather(*tasks)
     
@@ -248,13 +263,15 @@ async def analyze_email(
         # Boost risk score based on email-specific flags
         flag_boost = len(email_data["flags"]) * 8
         boosted_score = min(100, decision.risk_score + flag_boost)
-        
-        # Adjust threat level if flags pushed it up
-        boosted_level = decision.threat_level
-        if boosted_score >= 70:
-            boosted_level = "High Risk"
-        elif boosted_score >= 40:
-            boosted_level = "Suspicious"
+        boosted_level = map_threat_level(boosted_score)
+        boosted_severity = map_severity(boosted_level)
+
+        decision.recommended_actions = merge_remediation_actions(
+            decision.recommended_actions,
+            decision.threat_type,
+            boosted_score,
+            decision.indicators + email_data["flags"],
+        )
 
         # Persist
         snippet = f"Email from {email_data['sender']}: {email_data['subject']}"
@@ -271,7 +288,7 @@ async def analyze_email(
             "key_points": decision.key_points,
             "recommended_actions": decision.recommended_actions,
             "external_flags": decision.external_flags,
-            "severity_label": decision.severity_label,
+            "severity_label": boosted_severity,
             "advanced_analysis": {
                 "email_headers": {
                     "from": email_data["sender"],
@@ -300,7 +317,7 @@ async def analyze_email(
             "explanation": decision.explanation,
             "key_points": decision.key_points,
             "recommended_actions": decision.recommended_actions,
-            "severity_label": decision.severity_label,
+            "severity_label": boosted_severity,
             "email_analysis": {
                 "sender": email_data["sender"],
                 "reply_to": email_data["reply_to"],
@@ -319,4 +336,4 @@ async def analyze_email(
     except Exception as e:
         import traceback
         logger.error(f"❌ Email analysis failed: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Email analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Email analysis failed")

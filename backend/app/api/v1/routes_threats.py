@@ -37,6 +37,7 @@ def _doc_to_response(doc) -> AnalyzeResponse:
         recommended_actions=doc.recommended_actions,
         external_flags=ext_flags,
         severity_label=doc.severity_label,
+        advanced_analysis=doc.advanced_analysis,
         created_at=doc.created_at.isoformat(),
     )
 

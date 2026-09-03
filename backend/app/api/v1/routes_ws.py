@@ -3,11 +3,13 @@ CyberSentinel AI — WebSocket Routes
 Real-time push notifications for threat events.
 """
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 from loguru import logger
 import json
 from typing import List
 import asyncio
+
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -47,7 +49,16 @@ ws_manager = ConnectionManager()
 
 
 @router.websocket("/ws/threats")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(
+    websocket: WebSocket,
+    api_key: str = Query(default=""),
+):
+    """Require api_key query param matching settings.API_KEY (S2)."""
+    if not api_key or api_key != settings.API_KEY:
+        logger.warning("WS connection rejected: missing or invalid api_key")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await ws_manager.connect(websocket)
     try:
         while True:

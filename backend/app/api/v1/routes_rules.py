@@ -6,6 +6,13 @@ from app.db import crud_rules
 
 router = APIRouter()
 
+
+def _rule_to_response(doc) -> CustomRuleResponse:
+    """Build response without duplicating Beanie `id` from model_dump()."""
+    data = doc.model_dump(exclude={"id", "created_at"})
+    return CustomRuleResponse(id=str(doc.id), **data)
+
+
 @router.post("/", response_model=CustomRuleResponse)
 async def create_rule(
     rule_in: CustomRuleCreate,
@@ -13,7 +20,7 @@ async def create_rule(
 ):
     """Create a new custom detection rule."""
     doc = await crud_rules.create_rule(rule_in)
-    return CustomRuleResponse(id=str(doc.id), **doc.model_dump())
+    return _rule_to_response(doc)
 
 @router.get("/", response_model=List[CustomRuleResponse])
 async def list_all_rules(
@@ -21,7 +28,7 @@ async def list_all_rules(
 ):
     """List all custom rules."""
     docs = await crud_rules.list_rules()
-    return [CustomRuleResponse(id=str(doc.id), **doc.model_dump()) for doc in docs]
+    return [_rule_to_response(doc) for doc in docs]
 
 @router.patch("/{rule_id}/toggle", response_model=CustomRuleResponse)
 async def toggle_rule(
@@ -33,7 +40,7 @@ async def toggle_rule(
     doc = await crud_rules.toggle_rule_status(rule_id, is_active)
     if not doc:
         raise HTTPException(status_code=404, detail="Rule not found")
-    return CustomRuleResponse(id=str(doc.id), **doc.model_dump())
+    return _rule_to_response(doc)
 
 @router.delete("/{rule_id}")
 async def delete_rule(
