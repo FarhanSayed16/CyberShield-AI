@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+
 
 def get_remediation_steps(threat_type: str, risk_score: int, indicators: List[str]) -> List[str]:
     """Generate context-aware, actionable remediation steps based on the threat."""
@@ -38,3 +39,22 @@ def get_remediation_steps(threat_type: str, risk_score: int, indicators: List[st
         steps.append("- Network Isolation: Consider closing unusual outbound ports flagged in the indicators.")
 
     return steps
+
+
+def merge_remediation_actions(
+    existing: Optional[List[str]],
+    threat_type: str,
+    risk_score: int,
+    indicators: List[str],
+) -> List[str]:
+    """Keep Gemini/agent actions and append unique template remediation steps."""
+    template = get_remediation_steps(threat_type, risk_score, indicators)
+    merged: List[str] = []
+    seen: set[str] = set()
+    for action in list(existing or []) + template:
+        key = action.strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(action)
+    return merged

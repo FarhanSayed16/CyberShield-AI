@@ -78,6 +78,10 @@ async def evaluate_tier_2_moderate(decoded_bytes: bytes, media_type: str) -> dic
 
 # === TIER 3: ADVANCED (Gemini Vision LLM) ===
 async def evaluate_tier_3_advanced(decoded_bytes: bytes, media_type: str) -> DeepfakeAnalysisOutput:
+    if settings.USE_MOCK_AGENTS:
+        from app.clients.mock_tier3 import mock_deepfake_output
+        return mock_deepfake_output()
+
     if not _API_KEYS:
         return DeepfakeAnalysisOutput(
             risk_level="MEDIUM", risk_score=50, is_deepfake=False, confidence_score=0.9,
@@ -138,6 +142,24 @@ async def analyze_media(content: str, media_type: str, tier: str = "auto") -> Th
     from app.clients import hive_ai
     
     logger.info(f"🎭 Deepfake Analysis: type={media_type} tier={tier}")
+
+    # Video: not supported for frame extraction on free backend — be explicit (4.B.3 / honesty)
+    if media_type == "video":
+        return ThreatDecision(
+            threat_type="benign",
+            risk_score=0,
+            threat_level="Safe",
+            confidence=0.4,
+            explanation=(
+                "Video deepfake analysis is not enabled in this deployment. "
+                "Upload a still image (PNG/JPG) for Tier 1–3 deepfake checks, "
+                "or host cybersentinel-ml-api and pass an extracted frame."
+            ),
+            key_points=["video_not_supported", "use_image_upload"],
+            recommended_actions=["Export a representative frame and re-scan as image"],
+            severity_label="Informational",
+            advanced_analysis={"media_type": "video", "supported": False},
+        )
     
     try:
         decoded = base64.b64decode(content.split("base64,")[-1] if "base64," in content else content)

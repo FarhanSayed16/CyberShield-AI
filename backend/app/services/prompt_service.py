@@ -12,7 +12,6 @@ import google.generativeai as genai
 from app.core.config import settings
 from app.services.threat_router import ThreatDecision
 from app.schemas.analyze import ExternalFlags
-from app.core.ai_models import ai_manager
 from app.core.prompts import PROMPT_INJECTION_SYSTEM_INSTRUCTION
 from app.schemas.gemini_outputs import PromptInjectionOutput
 
@@ -28,34 +27,48 @@ def _get_next_api_key() -> str:
     return key
 
 
-# === TIER 1: BASIC (Placeholder) ===
-def evaluate_tier_1_basic(text: str) -> dict:
-    return {"flagged": False, "score": 0}
+# === TIER 1: BASIC (Remote ML or lexical heuristics) ===
+_INJECTION_HINTS = (
+    "ignore previous", "ignore all previous", "system prompt", "jailbreak",
+    "developer mode", "dan mode", "bypass", "do anything now", "reveal your instructions",
+    "disregard the above", "pretend you are",
+)
+
+async def evaluate_tier_1_basic(text: str) -> dict:
+    from app.clients import hf_ml
+
+    remote = await hf_ml.predict_prompt(text)
+    if remote:
+        return remote
+
+    lower = (text or "").lower()
+    hits = sum(1 for h in _INJECTION_HINTS if h in lower)
+    score = min(95, hits * 28)
+    flagged = score >= 50
+    return {
+        "flagged": flagged,
+        "score": score,
+        "label": "INJECTION" if flagged else "SAFE",
+        "source": "heuristic",
+    }
 
 
-# === TIER 2: MODERATE (Local HF) ===
+# === TIER 2: MODERATE (Remote HF when configured) ===
 async def evaluate_tier_2_moderate(text: str) -> dict:
-    if not ai_manager.prompt_pipe:
-        return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
-        
-    try:
-        hf_result = await asyncio.to_thread(ai_manager.prompt_pipe, text)
-        if hf_result:
-            label = str(hf_result[0]['label']).upper()
-            score = float(hf_result[0]['score'])
-            is_injection = "INJECTION" in label or "1" in label
-            return {
-                "confidence": score,
-                "label": "INJECTION" if is_injection else "SAFE",
-                "hf_score": (score * 100) if is_injection else ((1.0 - score) * 100)
-            }
-    except Exception as e:
-        logger.error(f"HF Tier 2 Error: {e}")
-    return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
+    from app.clients import hf_ml
+
+    remote = await hf_ml.predict_prompt(text)
+    if remote:
+        return remote
+    return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0, "source": "unavailable"}
 
 
 # === TIER 3: ADVANCED (Gemini LLM) ===
 async def evaluate_tier_3_advanced(text: str) -> PromptInjectionOutput:
+    if settings.USE_MOCK_AGENTS:
+        from app.clients.mock_tier3 import mock_prompt_output
+        return mock_prompt_output()
+
     if not _API_KEYS:
         return PromptInjectionOutput(
             risk_level="MEDIUM", risk_score=50, is_injection=False, confidence_score=0.9,
@@ -109,7 +122,7 @@ async def analyze_prompt(content: str, tier: str = "auto") -> ThreatDecision:
     # --- EXPLICIT TIER OVERRIDES ---
     if tier == "tier1":
         logger.info("Executing ONLY Tier 1 Custom ML Analysis...")
-        t1_result = evaluate_tier_1_basic(content)
+        t1_result = await evaluate_tier_1_basic(content)
         risk_score = t1_result.get("score", 0)
         is_injection = t1_result.get("flagged", False)
         return ThreatDecision(
@@ -185,7 +198,7 @@ async def analyze_prompt(content: str, tier: str = "auto") -> ThreatDecision:
 
     # --- AUTO ORCHESTRATION ---
     # 1. TIER 1 Execute
-    t1_result = evaluate_tier_1_basic(content)
+    t1_result = await evaluate_tier_1_basic(content)
 
     # 2. TIER 2 & External APIs Execute concurrently
     t2_task = evaluate_tier_2_moderate(content)

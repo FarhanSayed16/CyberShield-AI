@@ -14,8 +14,8 @@ class RiskResult:
     severity_label: str
 
 
-def _map_threat_level(score: int) -> str:
-    """Map a 0-100 score to a threat level."""
+def map_threat_level(score: int) -> str:
+    """Map a 0-100 score to a threat level (shared across services)."""
     if score <= 30:
         return "Safe"
     elif score <= 60:
@@ -24,7 +24,7 @@ def _map_threat_level(score: int) -> str:
         return "High Risk"
 
 
-def _map_severity(threat_level: str) -> str:
+def map_severity(threat_level: str) -> str:
     """Map threat level to severity label."""
     mapping = {
         "Safe": "Informational",
@@ -32,6 +32,11 @@ def _map_severity(threat_level: str) -> str:
         "High Risk": "Critical",
     }
     return mapping.get(threat_level, "Informational")
+
+
+# Backwards-compatible aliases
+_map_threat_level = map_threat_level
+_map_severity = map_severity
 
 
 def score_url(

@@ -1,24 +1,17 @@
 """
 CyberSentinel AI — Phishing Analysis Service (3-Tier Architecture)
-Tier 1: Basic Custom Model (Placeholder)
-Tier 2: Local HuggingFace ML
+Tier 1: Remote ML (/predict/text) or lexical heuristics
+Tier 2: Remote ML enrichment when HF_API_URL is set
 Tier 3: Advanced Gemini Analysis with Structured JSON Output
 """
 
 import asyncio
-import json
-import re
 from loguru import logger
-from fastapi import HTTPException
 import google.generativeai as genai
-import numpy as np
-
-from app.core.feature_extractors import extract_text_features
 
 from app.core.config import settings
 from app.services.threat_router import ThreatDecision
 from app.schemas.analyze import ExternalFlags
-from app.core.ai_models import ai_manager
 from app.core.prompts import PHISHING_SYSTEM_INSTRUCTION
 from app.schemas.gemini_outputs import PhishingAnalysisOutput
 
@@ -35,67 +28,48 @@ def _get_next_api_key() -> str:
     return key
 
 
-# === TIER 1: BASIC (Fast Custom ML Model) ===
-def evaluate_tier_1_basic(text: str) -> dict:
+# === TIER 1: BASIC (Remote ML or lexical heuristics) ===
+_PHISH_HINTS = (
+    "verify your account", "urgent", "suspended", "click here", "password",
+    "confirm your identity", "unusual activity", "limited time", "act now",
+    "wire transfer", "gift card", "crypto wallet",
+)
+
+async def evaluate_tier_1_basic(text: str) -> dict:
     """
-    Tier 1: Ultra-fast initial triage using the custom BernoulliNB model.
-    Checks manual signal heuristics + TF-IDF vocabulary.
+    Tier 1: Prefer remote ML (/predict/text) when HF_API_URL is set.
+    Otherwise use lightweight lexical heuristics (Gemini-only free deploy).
     """
-    if not ai_manager.phishing_text_model or not ai_manager.phishing_text_preprocessor:
-        return {"flagged": False, "score": 0}
+    from app.clients import hf_ml
 
-    try:
-        # 1. Extract 18 signal features
-        signal_features = extract_text_features(text)  # shape (1, 18)
-        
-        # 2. Extract TF-IDF features
-        tfidf_features = ai_manager.phishing_text_preprocessor.tfidf.transform([text]).toarray()
-        
-        # 3. Concatenate (signal features MUST be first, according to the pipeline training) 
-        # Wait, how were they concatenated during training? Usually `FeatureUnion` concats them.
-        # Let's assume pipeline did: [signals, tfidf] or we check if sizes match 390 + 18 = 408.
-        # Actually `BernoulliNB` trained on pure TF-IDF or combined? The metadata says: 
-        # "tfidf_vocab_size": 390, "signal_features": [...] 18 features. Total 408.
-        final_features = np.hstack((signal_features, tfidf_features))
-        
-        # 4. Predict
-        proba = ai_manager.phishing_text_model.predict_proba(final_features)[0]
-        malice_prob = proba[1]  # Assuming class 1 is phishing
-        
-        is_phishing = malice_prob > 0.8
-        
-        return {
-            "flagged": is_phishing,
-            "score": int(malice_prob * 100),
-            "label": "PHISHING" if is_phishing else "SAFE"
-        }
-    except Exception as e:
-        logger.error(f"Tier 1 ML Error: {e}")
-        return {"flagged": False, "score": 0}
+    remote = await hf_ml.predict_text(text)
+    if remote:
+        return remote
+
+    # Local models are intentionally not loaded on free-tier hosts (OOM).
+    lower = (text or "").lower()
+    hits = sum(1 for h in _PHISH_HINTS if h in lower)
+    score = min(95, hits * 18)
+    flagged = score >= 54
+    return {
+        "flagged": flagged,
+        "score": score,
+        "label": "PHISHING" if flagged else "SAFE",
+        "source": "heuristic",
+    }
 
 
-# === TIER 2: MODERATE (Local HuggingFace Pipeline) ===
+# === TIER 2: MODERATE (Remote HF when configured) ===
 async def evaluate_tier_2_moderate(text: str) -> dict:
     """
-    Tier 2: Run the specialized local Hugging Face transformer pipeline asynchronously.
+    Tier 2: Remote ML enrichment when HF_API_URL is set; otherwise no-op safe.
     """
-    if not ai_manager.phishing_pipe:
-        return {"confidence": 0.0, "label": "SAFE"}
-        
-    try:
-        hf_result = await asyncio.to_thread(ai_manager.phishing_pipe, text)
-        if hf_result:
-            label = str(hf_result[0]['label']).upper()
-            score = float(hf_result[0]['score'])
-            is_phish = "PHISH" in label or "1" in label or "MALICIOUS" in label
-            return {
-                "confidence": score,
-                "label": "PHISHING" if is_phish else "SAFE",
-                "hf_score": (score * 100) if is_phish else ((1.0 - score) * 100)
-            }
-    except Exception as e:
-        logger.error(f"HF Tier 2 Error: {e}")
-    return {"confidence": 0.0, "label": "SAFE"}
+    from app.clients import hf_ml
+
+    remote = await hf_ml.predict_text(text)
+    if remote:
+        return remote
+    return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0, "source": "unavailable"}
 
 
 # === TIER 3: ADVANCED (Gemini LLM) ===
@@ -103,6 +77,10 @@ async def evaluate_tier_3_advanced(text: str) -> PhishingAnalysisOutput:
     """
     Tier 3: Full semantic analysis using Gemini. Forces output to match our strict JSON Schema.
     """
+    if settings.USE_MOCK_AGENTS:
+        from app.clients.mock_tier3 import mock_phishing_output
+        return mock_phishing_output()
+
     if not _API_KEYS:
         # Fallback dummy if no keys
         return PhishingAnalysisOutput(
@@ -159,7 +137,7 @@ async def analyze_text(content: str, tier: str = "auto") -> ThreatDecision:
     # --- EXPLICIT TIER OVERRIDES ---
     if tier == "tier1":
         logger.info("Executing ONLY Tier 1 Custom ML Analysis...")
-        t1_result = evaluate_tier_1_basic(content)
+        t1_result = await evaluate_tier_1_basic(content)
         risk_score = t1_result.get("score", 0)
         is_phishing = t1_result.get("flagged", False)
         return ThreatDecision(
@@ -206,7 +184,7 @@ async def analyze_text(content: str, tier: str = "auto") -> ThreatDecision:
 
     # --- AUTO ORCHESTRATION ---
     # 1. TIER 1 Execute
-    t1_result = evaluate_tier_1_basic(content)
+    t1_result = await evaluate_tier_1_basic(content)
     if t1_result["flagged"]:
         # If Tier 1 definitive block, we can fail fast here (future implementation).
         pass

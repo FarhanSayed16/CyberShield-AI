@@ -27,18 +27,21 @@ async def analyze_url(url: str, tier: str = "auto") -> ThreatDecision:
         ml_risk_score = 0
         feature_map = {}
         try:
-            prob, feature_map = ml_engine.evaluate_url(url)
+            prob, feature_map = await ml_engine.evaluate_url(url)
             ml_risk_score = int(prob * 100)
+            logger.info(f"⚡ URL ML Tier 1 Score: {ml_risk_score}%")
         except Exception as e:
             logger.error(f"URL ML Tier 1 failed: {e}")
         
+        from app.services.risk_engine import map_threat_level, map_severity
+        threat_level = map_threat_level(ml_risk_score)
         return ThreatDecision(
             threat_type="malicious_url" if ml_risk_score > 50 else "benign",
             risk_score=ml_risk_score,
-            threat_level="High Risk" if ml_risk_score >= 70 else "Suspicious" if ml_risk_score >= 30 else "Safe",
+            threat_level=threat_level,
             confidence=0.8 if ml_risk_score > 50 else 0.5,
             explanation=f"Tier 1 Local ML: {'Malicious URL detected' if ml_risk_score > 50 else 'No threat detected'}.",
-            severity_label="Critical" if ml_risk_score >= 80 else "Warning" if ml_risk_score >= 40 else "Informational",
+            severity_label=map_severity(threat_level),
             advanced_analysis={"tier1_ml_score": ml_risk_score, "ml_features": feature_map}
         )
 
@@ -100,7 +103,7 @@ async def analyze_url(url: str, tier: str = "auto") -> ThreatDecision:
     ml_risk_score = 0
     feature_map = {}
     try:
-        prob, feature_map = ml_engine.evaluate_url(url)
+        prob, feature_map = await ml_engine.evaluate_url(url)
         ml_risk_score = int(prob * 100)
         logger.info(f"⚡ URL ML Tier 1 Score: {ml_risk_score}%")
     except Exception as e:
@@ -132,14 +135,11 @@ async def analyze_url(url: str, tier: str = "auto") -> ThreatDecision:
     
     # Blend ML Score
     if ml_risk_score > 0:
+        from app.services.risk_engine import map_threat_level, map_severity
         # Boost confidence/risk by averaging if ML disagrees, or maxing it if it's very high.
         risk.risk_score = max(risk.risk_score, ml_risk_score)
-        if risk.risk_score >= 70:
-            risk.threat_level = "High Risk"
-            risk.severity_label = "Critical"
-        elif risk.risk_score >= 30:
-            risk.threat_level = "Suspicious"
-            risk.severity_label = "Warning"
+        risk.threat_level = map_threat_level(risk.risk_score)
+        risk.severity_label = map_severity(risk.threat_level)
 
     # Step 4: Get indicators from Gemini result
     indicators = gemini_result.get("indicators", []) if gemini_result else []
@@ -181,4 +181,9 @@ async def analyze_url(url: str, tier: str = "auto") -> ThreatDecision:
         recommended_actions=recommendation_result.get("actions", []),
         external_flags=external_flags if external_flags else None,
         severity_label=risk.severity_label,
+        advanced_analysis={
+            "tier1_ml_score": ml_risk_score,
+            "ml_features": feature_map,
+            "tier3_gemini": bool(gemini_result),
+        },
     )

@@ -26,19 +26,45 @@ def _get_next_api_key() -> str:
     return key
 
 
-# === TIER 1: BASIC (Placeholder) ===
+# === TIER 1: BASIC (lightweight experimental rules) ===
 def evaluate_tier_1_basic(text: str) -> dict:
-    return {"flagged": False, "score": 0}
+    """Experimental lexical / IoC-style checks — not full behavioral ML."""
+    lower = (text or "").lower()
+    score = 0
+    flags = []
+    if "exfil" in lower or "exfiltration" in lower:
+        score += 35
+        flags.append("exfiltration_keyword")
+    if "privilege" in lower and "escalat" in lower:
+        score += 30
+        flags.append("privilege_escalation_keyword")
+    if "impossible travel" in lower or "geo-impossible" in lower:
+        score += 40
+        flags.append("impossible_travel_keyword")
+    if any(p in lower for p in ("port 4444", "port 1337", "c2 server", "beacon")):
+        score += 35
+        flags.append("c2_indicator")
+    score = min(100, score)
+    return {
+        "flagged": score >= 40,
+        "score": score,
+        "indicators": flags,
+        "source": "experimental_rules",
+    }
 
 
-# === TIER 2: MODERATE (Placeholder) ===
+# === TIER 2: MODERATE (Placeholder — not shipped as production ML) ===
 async def evaluate_tier_2_moderate(text: str) -> dict:
-    # Future integration: PyOD or simple statistical moving average baseline checks.
-    return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0}
+    # Experimental path only; primary signal is Tier 3 Gemini.
+    return {"confidence": 0.0, "label": "SAFE", "hf_score": 0.0, "source": "experimental"}
 
 
 # === TIER 3: ADVANCED (Gemini LLM) ===
 async def evaluate_tier_3_advanced(text: str) -> BehaviorAnomalyOutput:
+    if settings.USE_MOCK_AGENTS:
+        from app.clients.mock_tier3 import mock_anomaly_output
+        return mock_anomaly_output()
+
     if not _API_KEYS:
         return BehaviorAnomalyOutput(
             risk_level="MEDIUM", risk_score=50, is_anomaly=False, confidence_score=0.9,
@@ -98,9 +124,9 @@ async def analyze_anomaly(content: str, tier: str = "auto") -> ThreatDecision:
             risk_score=risk_score,
             threat_level="High Risk" if risk_score >= 70 else "Suspicious" if risk_score >= 30 else "Safe",
             confidence=0.8 if is_anomaly else 0.5,
-            explanation=f"Tier 1 Custom ML: {'Anomaly detected' if is_anomaly else 'No threat detected'}.",
+            explanation=f"Tier 1 experimental rules: {'Anomaly signals found' if is_anomaly else 'No anomaly keywords matched'}.",
             severity_label="Critical" if risk_score >= 80 else "Warning" if risk_score >= 40 else "Informational",
-            advanced_analysis={"tier1_ml_score": risk_score}
+            advanced_analysis={"tier1_score": risk_score, "experimental": True, "source": "experimental_rules"}
         )
 
     if tier == "tier2":
@@ -113,9 +139,9 @@ async def analyze_anomaly(content: str, tier: str = "auto") -> ThreatDecision:
             risk_score=risk_score,
             threat_level="High Risk" if risk_score >= 70 else "Suspicious" if risk_score >= 30 else "Safe",
             confidence=t2_result.get("confidence", 0.5),
-            explanation=f"Tier 2 Validation: {t2_result.get('label', 'SAFE')}",
-            severity_label="Critical" if risk_score >= 80 else "Warning" if risk_score >= 40 else "Informational",
-            advanced_analysis={"tier2_hf_score": risk_score, "tier2_hf_label": t2_result.get("label", "SAFE")}
+            explanation="Tier 2 behavior ML is experimental and not enabled on this host — use Auto/Tier 3 Gemini.",
+            severity_label="Informational",
+            advanced_analysis={"tier2_status": "experimental_disabled"}
         )
 
     if tier == "tier3":
