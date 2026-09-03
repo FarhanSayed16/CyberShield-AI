@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     HF_API_URL: str = ""
 
     # Security
+    # development | production — production refuses weak API_KEY and disables debug agents
+    ENVIRONMENT: str = "development"
     API_KEY: str = "dev-key"
     CORS_ORIGINS: str = "http://localhost:5173"
 

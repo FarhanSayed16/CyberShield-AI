@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 # --- Type Aliases ---
-ThreatInputType = Literal["url", "text", "prompt", "image", "video", "anomaly"]
+ThreatInputType = Literal["url", "text", "prompt", "image", "video", "anomaly", "email"]
 ThreatType = Literal["phishing", "malicious_url", "prompt_injection", "deepfake", "behavior_anomaly", "benign"]
 ThreatLevel = Literal["Safe", "Suspicious", "High Risk"]
 SeverityLabel = Literal["Informational", "Warning", "Critical"]
@@ -19,7 +19,7 @@ SeverityLabel = Literal["Informational", "Warning", "Critical"]
 
 class AnalyzeRequest(BaseModel):
     """Input from frontend or extension to trigger threat analysis."""
-    source: Literal["extension", "dashboard"] = "dashboard"
+    source: Literal["extension", "dashboard", "history_audit"] = "dashboard"
     type: ThreatInputType
     tier: Literal["tier1", "tier2", "tier3", "auto"] = "auto"
     content: str = Field(..., min_length=1, max_length=10_485_760, description="Raw content to analyze (base64 for image/video)")
@@ -67,3 +67,6 @@ class DomainReputationResponse(BaseModel):
     vt_score: str
     is_suspicious_tld: bool
     ssl_valid: bool
+    # Free-tier path uses heuristics only (not live WHOIS/VT)
+    simulated: bool = True
+    note: str = "Heuristic demo signal — not live WHOIS/VirusTotal"

@@ -21,11 +21,12 @@ async def init_db():
     global _client
     try:
         logger.info(f"Connecting to MongoDB: {settings.DB_NAME}")
-        _client = AsyncIOMotorClient(
-            settings.MONGODB_URI,
-            serverSelectionTimeoutMS=5000,
-            tlsCAFile=certifi.where(),
-        )
+        client_kwargs: dict = {"serverSelectionTimeoutMS": 5000}
+        # Atlas / SRV URIs need CA bundle; local mongodb:// usually does not
+        uri = settings.MONGODB_URI or ""
+        if "mongodb+srv://" in uri or "atlas" in uri.lower() or "tls=true" in uri.lower():
+            client_kwargs["tlsCAFile"] = certifi.where()
+        _client = AsyncIOMotorClient(uri, **client_kwargs)
         # Test the connection
         await _client.admin.command("ping")
         await init_beanie(

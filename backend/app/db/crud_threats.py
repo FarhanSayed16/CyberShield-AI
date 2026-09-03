@@ -14,17 +14,26 @@ from pymongo.errors import PyMongoError
 from app.db.models import ThreatEventDocument, ExternalFlagsEmbed
 from collections import Counter
 
-
-import uuid
-import asyncio
 from app.api.v1.routes_ws import ws_manager
+
+def _normalize_external_flags(flags) -> Optional[dict]:
+    """Accept dict or Pydantic model; return plain dict for ExternalFlagsEmbed."""
+    if flags is None:
+        return None
+    if hasattr(flags, "model_dump"):
+        return flags.model_dump()
+    if isinstance(flags, dict):
+        return flags
+    return None
+
 
 async def create_threat_event(data: dict) -> ThreatEventDocument:
     """Create and save a new threat event document."""
     # Build external flags embed if present
     ext_flags = None
-    if data.get("external_flags"):
-        ext_flags = ExternalFlagsEmbed(**data["external_flags"])
+    raw_flags = _normalize_external_flags(data.get("external_flags"))
+    if raw_flags:
+        ext_flags = ExternalFlagsEmbed(**raw_flags)
 
     doc = ThreatEventDocument(
         type=data["type"],
@@ -64,10 +73,7 @@ async def create_threat_event(data: dict) -> ThreatEventDocument:
         
     except PyMongoError as e:
         logger.error(f"Failed to persist threat event to DB: {e}")
-        if not doc.event_id:
-            doc.event_id = uuid.uuid4().hex
-        if not doc.created_at:
-            doc.created_at = datetime.now(timezone.utc)
+        raise HTTPException(status_code=503, detail="Database currently unavailable") from e
         
     return doc
 

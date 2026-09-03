@@ -7,10 +7,10 @@ from loguru import logger
 from app.core.config import settings
 
 
-async def check(prompt_text: str) -> str | None:
+async def check(prompt_text: str) -> dict | None:
     """
     Validate prompt against SafePrompt API.
-    Returns risk classification string or None on error/skip.
+    Returns {"risk_category": str} or None on error/skip.
     """
     if not settings.SAFEPROMPT_API_KEY or settings.SAFEPROMPT_API_KEY == "placeholder":
         logger.debug("🛡️ SafePrompt: skipped (no API key)")
@@ -30,7 +30,7 @@ async def check(prompt_text: str) -> str | None:
             data = response.json()
             risk = data.get("risk", "unknown")
             logger.info(f"🛡️ SafePrompt: risk={risk}")
-            return risk
+            return {"risk_category": risk}
     except Exception as e:
         logger.warning(f"🛡️ SafePrompt error: {e}")
         return None

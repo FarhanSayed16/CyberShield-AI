@@ -27,7 +27,7 @@ class ThreatEventDocument(Document):
     """MongoDB document representing a single threat analysis event."""
 
     event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    type: str  # url | text | prompt | image | video
+    type: str  # url | text | prompt | image | video | email | anomaly
     source: str  # extension | dashboard
     raw_input_snippet: str
     threat_type: str  # phishing | malicious_url | prompt_injection | deepfake | benign
