@@ -3,7 +3,7 @@ import { Box, Typography, Chip, Button } from '@mui/material'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import AnimatedPage from '../components/common/AnimatedPage'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import apiClient from '../api/client'
+import { getGeoAnalytics, getTimelineAnalytics } from '../api/endpoints'
 import DownloadIcon from '@mui/icons-material/Download'
 
 // Lazy load existing components
@@ -28,19 +28,22 @@ export default function AnalyticsPage() {
   const [geoData, setGeoData] = useState<GeoRegion[]>([])
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       setIsLoading(true)
+      setError(null)
       try {
         const [geoRes, timeRes] = await Promise.all([
-          apiClient.get('/api/analytics/geo'),
-          apiClient.get('/api/analytics/timeline?hours=48'),
+          getGeoAnalytics(),
+          getTimelineAnalytics(48),
         ])
-        setGeoData(geoRes.data.regions || [])
-        setTimelineData(timeRes.data)
+        setGeoData(geoRes.regions || [])
+        setTimelineData(timeRes)
       } catch (e) {
         console.error('Analytics fetch error:', e)
+        setError('Could not load geo/timeline analytics.')
       } finally {
         setIsLoading(false)
       }
@@ -91,7 +94,19 @@ export default function AnalyticsPage() {
       }>
         <KpiCards />
 
+        {error && (
+          <div className="glass-card p-4 mt-6 border border-suspicious/30 text-sm text-theme-text-secondary">
+            {error}
+          </div>
+        )}
+
         {/* Attack Timeline — Stacked Bar Chart */}
+        {!isLoading && !error && chartData.length === 0 && (
+          <div className="glass-card p-8 mt-6 text-center text-sm text-theme-text-secondary">
+            No timeline data yet. Run scans to populate the 48-hour attack timeline.
+          </div>
+        )}
+
         {chartData.length > 0 && (
           <div className="glass-card p-6 mt-6 border-t-[3px] border-t-primary relative overflow-hidden group hover:shadow-sm transition-all duration-500">
             <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -128,11 +143,16 @@ export default function AnalyticsPage() {
         {/* Geographic Threat Distribution */}
         {geoData.length > 0 && (
           <div className="glass-card p-6 mt-6 border-t-[3px] border-t-safe relative overflow-hidden group hover:shadow-sm transition-all duration-500">
-            <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-6 flex items-center gap-2">
+            <h3 className="text-[11px] font-bold text-theme-text-secondary uppercase tracking-widest mb-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-safe animate-pulse" />
               Geographic Threat Distribution
+              <span className="ml-2 px-2 py-0.5 rounded border border-theme-border text-[10px] tracking-wider text-theme-text-secondary normal-case">
+                Simulated / aggregated
+              </span>
             </h3>
-            
+            <p className="text-xs text-theme-text-secondary mb-6">
+              Region buckets are illustrative aggregates — not a live geo-IP map.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-10">
               {geoData.filter(r => r.count > 0).sort((a, b) => b.count - a.count).map((region) => (
                 <div

@@ -86,7 +86,7 @@ export default function BrowsingAuditPage() {
           <Typography variant="h5" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
             <TravelExplore /> Browsing History Audit
           </Typography>
-          <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
             Scan your recent browser history for hidden threats, phishing links, and malicious domains.
           </Typography>
         </Box>
@@ -94,14 +94,8 @@ export default function BrowsingAuditPage() {
           variant="contained"
           onClick={startAudit}
           disabled={isScanning}
-          sx={{
-            bgcolor: '#8B5CF6',
-            color: 'white',
-            fontWeight: 600,
-            textTransform: 'none',
-            px: 3,
-            '&:hover': { bgcolor: '#7C3AED' }
-          }}
+          color="primary"
+          sx={{ fontWeight: 600, textTransform: 'none', px: 3 }}
         >
           {isScanning ? 'Auditing...' : 'Run History Audit'}
         </Button>
@@ -116,13 +110,13 @@ export default function BrowsingAuditPage() {
       )}
 
       {isScanning && (
-        <Paper sx={{ p: 5, textAlign: 'center', bgcolor: 'rgba(15, 23, 42, 0.4)', borderRadius: 3, border: '1px solid #1E293B' }}>
-          <CircularProgress size={48} sx={{ color: '#8B5CF6', mb: 2 }} />
-          <Typography variant="h6" sx={{ color: '#E2E8F0', fontWeight: 600 }}>Analyzing Browsing History...</Typography>
-          <Typography variant="body2" sx={{ color: '#94A3B8', mt: 1, maxWidth: 400, mx: 'auto' }}>
+        <Paper sx={{ p: 5, textAlign: 'center', bgcolor: 'background.paper', borderRadius: 3, border: 1, borderColor: 'divider' }}>
+          <CircularProgress size={48} color="primary" sx={{ mb: 2 }} />
+          <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>Analyzing Browsing History...</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1, maxWidth: 400, mx: 'auto' }}>
             The extension is securely gathering your recent unique URLs and running them through the AI analysis pipeline.
           </Typography>
-          <LinearProgress sx={{ mt: 3, height: 6, borderRadius: 3, bgcolor: '#1E293B', '& .MuiLinearProgress-bar': { bgcolor: '#8B5CF6' } }} />
+          <LinearProgress sx={{ mt: 3, height: 6, borderRadius: 3 }} color="primary" />
         </Paper>
       )}
 

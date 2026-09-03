@@ -667,7 +667,7 @@ export default function LandingPage() {
             <a href="#console" className="lp-nav-link">Console</a>
             <a href="#team" className="lp-nav-link">Team</a>
           </div>
-          <p className="text-sm text-theme-text-secondary">© 2026 CyberShield AI</p>
+          <p className="text-sm text-theme-text-secondary">© 2026 CyberSentinel</p>
         </div>
       </footer>
 
