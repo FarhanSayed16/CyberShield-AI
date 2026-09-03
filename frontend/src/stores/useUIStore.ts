@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { getStats } from '../api/endpoints'
+import { getHealth, getStats } from '../api/endpoints'
 import type { ThreatLevel } from '../api/types'
+
+export type SystemHealthStatus = 'active' | 'degraded' | 'down' | 'unknown'
 
 interface UIState {
   currentGlobalRiskLevel: ThreatLevel
@@ -9,11 +11,15 @@ interface UIState {
   isAssistantExpanded: boolean
   latestThreatId: string | null
   themeMode: 'light' | 'dark'
+  systemStatus: SystemHealthStatus
+  systemStatusDetail: string
   
   toggleAssistant: () => void
   toggleTheme: () => void
   markAllRead: () => void
+  bumpUnreadHighRisk: () => void
   checkSystemStatus: () => Promise<void>
+  pollHealth: () => Promise<void>
 }
 
 export const useUIStore = create<UIState>()(
@@ -23,7 +29,9 @@ export const useUIStore = create<UIState>()(
       unreadHighRiskCount: 0,
       isAssistantExpanded: false,
       latestThreatId: null,
-      themeMode: 'dark', // Default to dark
+      themeMode: 'dark',
+      systemStatus: 'unknown',
+      systemStatusDetail: 'Checking services…',
       
       toggleAssistant: () => set(state => ({ isAssistantExpanded: !state.isAssistantExpanded })),
       
@@ -37,6 +45,7 @@ export const useUIStore = create<UIState>()(
       },
 
       markAllRead: () => set({ unreadHighRiskCount: 0 }),
+      bumpUnreadHighRisk: () => set(state => ({ unreadHighRiskCount: state.unreadHighRiskCount + 1 })),
       
       checkSystemStatus: async () => {
         try {
@@ -48,13 +57,34 @@ export const useUIStore = create<UIState>()(
         } catch (err) {
           console.error('Failed to poll system status', err)
         }
-      }
+      },
+
+      pollHealth: async () => {
+        try {
+          const health = await getHealth()
+          if (health.status === 'ok') {
+            set({
+              systemStatus: 'active',
+              systemStatusDetail: `DB ${health.db} · agents ${health.agents}`,
+            })
+          } else {
+            set({
+              systemStatus: 'degraded',
+              systemStatusDetail: `DB ${health.db} · agents ${health.agents}`,
+            })
+          }
+        } catch {
+          set({
+            systemStatus: 'down',
+            systemStatusDetail: 'Backend unreachable',
+          })
+        }
+      },
     }),
     {
       name: 'cybersentinel-ui-storage',
-      partialize: (state) => ({ themeMode: state.themeMode }), // Only persist theme mode
+      partialize: (state) => ({ themeMode: state.themeMode }),
       onRehydrateStorage: () => (state) => {
-        // Apply theme immediately after loading persisted state
         if (state?.themeMode === 'dark') document.documentElement.classList.add('dark')
         else document.documentElement.classList.remove('dark')
       }

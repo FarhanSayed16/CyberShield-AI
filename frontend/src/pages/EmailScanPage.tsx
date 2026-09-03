@@ -2,36 +2,13 @@ import { useState, useCallback } from 'react'
 import { Box, Typography, Paper, Button, Chip, LinearProgress, Alert } from '@mui/material'
 import { Email, Shield, Warning, CheckCircle, Error as ErrorIcon, UploadFile } from '@mui/icons-material'
 import AnimatedPage from '../components/common/AnimatedPage'
-import apiClient from '../api/client'
-
-interface EmailAnalysisResult {
-  id: string
-  threat_type: string
-  risk_score: number
-  threat_level: string
-  confidence: number
-  indicators: string[]
-  explanation: string
-  key_points: string[]
-  recommended_actions: string[]
-  email_analysis: {
-    sender: string
-    reply_to: string
-    subject: string
-    date: string
-    auth: { spf: string; dkim: string; dmarc: string }
-    urls: string[]
-    total_urls: number
-    attachments: { filename: string; content_type: string; size: number }[]
-    flags: string[]
-    body_preview: string
-  }
-}
+import { analyzeEmail } from '../api/endpoints'
+import type { EmailAnalyzeResponse } from '../api/types'
 
 export default function EmailScanPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [result, setResult] = useState<EmailAnalysisResult | null>(null)
+  const [result, setResult] = useState<EmailAnalyzeResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
 
@@ -47,7 +24,7 @@ export default function EmailScanPage() {
         new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
       )
 
-      const { data } = await apiClient.post('/api/analyze/email', {
+      const data = await analyzeEmail({
         type: 'email',
         source: 'dashboard',
         content: base64,
@@ -95,7 +72,7 @@ export default function EmailScanPage() {
         <Typography variant="h5" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Email /> Email Threat Scanner
         </Typography>
-        <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.5 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
           Upload a raw .eml file to analyze headers, authentication, embedded URLs, and attachments for phishing indicators.
         </Typography>
       </Box>
@@ -109,20 +86,20 @@ export default function EmailScanPage() {
           p: 5,
           textAlign: 'center',
           border: '2px dashed',
-          borderColor: isDragging ? '#8B5CF6' : '#334155',
-          bgcolor: isDragging ? 'rgba(139, 92, 246, 0.05)' : 'rgba(15, 23, 42, 0.4)',
+          borderColor: isDragging ? 'primary.main' : 'divider',
+          bgcolor: isDragging ? 'action.hover' : 'background.paper',
           borderRadius: 3,
           cursor: 'pointer',
           transition: 'all 0.3s',
-          '&:hover': { borderColor: '#8B5CF6', bgcolor: 'rgba(139, 92, 246, 0.05)' },
+          '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
         }}
         onClick={() => document.getElementById('eml-file-input')?.click()}
       >
-        <UploadFile sx={{ fontSize: 48, color: isDragging ? '#8B5CF6' : '#64748B', mb: 1 }} />
-        <Typography variant="h6" sx={{ color: '#E2E8F0', fontWeight: 600 }}>
+        <UploadFile sx={{ fontSize: 48, color: isDragging ? 'primary.main' : 'text.secondary', mb: 1 }} />
+        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
           {fileName ? `📧 ${fileName}` : 'Drop .eml file here or click to browse'}
         </Typography>
-        <Typography variant="caption" sx={{ color: '#64748B' }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           Supports .eml format (exported email files)
         </Typography>
         <input
@@ -136,8 +113,8 @@ export default function EmailScanPage() {
 
       {isAnalyzing && (
         <Box sx={{ mt: 2 }}>
-          <Typography sx={{ mb: 1, color: '#94A3B8' }}>🔍 Analyzing email headers, body, and embedded URLs...</Typography>
-          <LinearProgress sx={{ borderRadius: 2, bgcolor: '#1E293B', '& .MuiLinearProgress-bar': { bgcolor: '#8B5CF6' } }} />
+          <Typography sx={{ mb: 1, color: 'text.secondary' }}>🔍 Analyzing email headers, body, and embedded URLs...</Typography>
+          <LinearProgress sx={{ borderRadius: 2 }} color="primary" />
         </Box>
       )}
 
