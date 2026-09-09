@@ -210,9 +210,7 @@ CyberShield AI/
 │   ├── content.js / content.css    # Quickball & Action Center injection
 │   └── background.js               # Service worker for event handling
 │
-├── 🧠 models/                      # Trained ML model artifacts
-├── 🔬 cybersentinel-ml-api/        # Optional remote ML microservice
-├── 📚 doc/                         # Architecture & implementation docs
+├── 📚 doc/                         # Architecture, phases, legal, ops, reference specs
 └── 📄 README.md
 ```
 
@@ -235,6 +233,9 @@ CyberShield AI/
 git clone https://github.com/FarhanSayed16/CyberShield-AI.git
 cd CyberShield-AI
 ```
+
+> **Monorepo local DX:** see [`doc/LOCAL_DEV_MERGED.md`](doc/LOCAL_DEV_MERGED.md) or run `.\run-local.ps1` (Windows). Infra: `docker compose up -d mongo redis`.  
+> **Phase 2 API:** one backend serves Threat Explainer + AI Guard. Seed demo org: `cd backend && python -m app.scripts.seed_org` (use `STORAGE_BACKEND=memory` for no Mongo). Details: [`doc/Phase2_Backend_Integration.md`](doc/Phase2_Backend_Integration.md).
 
 ### Step 2: Start the Backend
 
@@ -366,7 +367,7 @@ The Chrome extension provides real-time protection on every page you visit:
 ### Deployment Guides
 
 - 📘 [Free-Tier Deployment Guide](doc/free_tier_deployment_guide.md)
-- 📘 [Hugging Face Space Upload Guide](cybersentinel-ml-api/HF_UPLOAD_GUIDE.md)
+- 📘 [Staging runbook](doc/ops/Staging_Runbook.md)
 
 ---
 
@@ -374,16 +375,23 @@ The Chrome extension provides real-time protection on every page you visit:
 
 | Document | Description |
 | :--- | :--- |
-| 📘 [Phased Implementation Plan](doc/Phased_Implementation_Plan.md) | Phases 1–5 tracking (correctness → release) |
+| 📘 [External APIs & obtainment](doc/External_APIs_And_Obtainment_Guide.md) | Keys, mocks, and where to get each service |
+| 📘 [Master Integration Execution Plan](doc/Master_Integration_Execution_Plan.md) | Phases 0–8 checklist (integration → sellable release) |
+| 📘 [Phase 0 Decisions](doc/Phase0_Kickoff_And_Decisions.md) | Locked brand, wedge, monorepo layout |
+| 📘 [Phase 1 Architecture & Env](doc/Phase1_Architecture_And_Env.md) | Frozen architecture + env contract |
+| 📘 [Local Dev (merged)](doc/LOCAL_DEV_MERGED.md) | `run-local.ps1` + Compose |
+| 📘 [Product Idea & Selling Plan](doc/Product_Idea_And_Selling_Plan.md) | Short pitch + GTM |
+| 📘 [Combined Product Plan](doc/Combined_Product_And_Integration_Plan.md) | Keep/drop + merge strategy |
+| 📘 [AISentinel reference specs](doc/reference/README.md) | Former aiextinct Plan/docs (reference only) |
+| 📘 [Phased Implementation Plan](doc/Phased_Implementation_Plan.md) | CS engineering Phases 1–5 (complete) |
 | 📘 [Full Project Audit](doc/Full_Project_Audit_Fixes_And_Improvements.md) | Canonical gaps / fixes (IDs) |
 | 📘 [Free-Tier Deployment Guide](doc/free_tier_deployment_guide.md) | Atlas → Render → Vercel → extension checklist |
-| 📘 [AI Implementation Overview](doc/AI_Implementation_Overview.md) | AI tiers, services, and schemas |
-| 📘 [Full-Stack Implementation Map](doc/Frontend_Backend_Extension_Implementation.md) | Frontend, backend, and extension architecture |
-| 📘 [ML Upload Guide](cybersentinel-ml-api/HF_UPLOAD_GUIDE.md) | Optional remote ML (`HF_API_URL`) |
+| 📘 [Staging / ops](doc/ops/Staging_Runbook.md) | Staging dry-run + backup notes |
 | 📘 [Chrome Web Store Checklist](extension/CHROME_WEB_STORE_CHECKLIST.md) | Extension packaging prep |
-| 📘 [Project Gaps (superseded)](doc/Current_Project_Gaps_And_Fixes.md) | Points to audit + plan |
 
-> **Product surface:** Operator console covers scan, history, analytics, email, audit, and rules. `/api/intel` is experimental API-only (no console UI). `/api/agent/*` is debug-only and disabled when `ENVIRONMENT=production`.
+> **Monorepo:** One product only. Live code = `backend/` · `frontend/` · `extension/`. Specs = `doc/` (+ `doc/reference/`). No nested second git repo.
+
+> **Product surface:** AI Workplace Guard (orgs, DLP, AI-site monitoring) + Threat Explainer. Leave `HF_API_URL` empty for Gemini-only. `/api/intel` is experimental API-only. `/api/agent/*` is debug-only in staging/production.
 
 ---
 

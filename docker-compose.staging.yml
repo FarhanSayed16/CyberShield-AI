@@ -1,0 +1,26 @@
+# Staging overlay for local production-like dry-run
+# Usage (repo root):
+#   copy backend\.env.staging.example backend\.env.staging
+#   # edit secrets (strong JWT_SECRET + API_KEY), set GEMINI optional
+#   # For local mongo in compose, set:
+#   #   MONGODB_URI=mongodb://mongo:27017
+#   #   CORS_ORIGINS=http://localhost:5173
+#   #   FRONTEND_URL=http://localhost:5173
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml --env-file backend/.env.staging up --build -d
+#   python -m app.scripts.ensure_indexes   # from backend/ with same MONGODB_URI host-reachable
+#   python -m app.scripts.staging_smoke
+
+services:
+  backend:
+    env_file:
+      - ./backend/.env.staging
+    environment:
+      ENVIRONMENT: staging
+      STORAGE_BACKEND: mongodb
+      # Prefer compose service DNS when using local mongo
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      DB_NAME: ${DB_NAME:-cybersentinel_staging}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      USE_MOCK_AGENTS: ${USE_MOCK_AGENTS:-true}

@@ -72,6 +72,11 @@ typings/
 .env
 .env.test
 .env*.local
+.env.staging
+**/.env.staging
+backend/.env.staging
+frontend/.env.staging
+backups/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -140,14 +145,9 @@ venv.bak/
 *.swp
 *.swo
 
-# Models — keep inference weights only under cybersentinel-ml-api/models/
-# Prefer Git LFS for new large .pt / .pkl outside that folder.
-doc/backend/**/*.pkl
-doc/backend/**/*.pt
+# Removed from v1 tree — do not re-add bulky dumps
+/sources/
+/models/
+/cybersentinel-ml-api/
+/doc/backend/
 **/url_ml_model.pkl
-
-# Optional: uncomment to force LFS-tracked binaries elsewhere
-# *.pt
-# *.pkl
-# !cybersentinel-ml-api/models/**/*.pt
-# !cybersentinel-ml-api/models/**/*.pkl
