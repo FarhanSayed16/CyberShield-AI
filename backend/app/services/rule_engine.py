@@ -1,5 +1,5 @@
 from loguru import logger
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from app.db import crud_rules
 from app.schemas.rules import RuleDocument
 
@@ -7,13 +7,19 @@ class CustomRuleEngine:
     def __init__(self):
         pass
 
-    async def evaluate_rules(self, data: Dict[str, Any], current_score: int, current_level: str) -> Tuple[int, str, list]:
+    async def evaluate_rules(
+        self,
+        data: Dict[str, Any],
+        current_score: int,
+        current_level: str,
+        org_id: Optional[str] = None,
+    ) -> Tuple[int, str, list]:
         """
-        Evaluate all active custom rules against the data dict.
+        Evaluate active custom rules for one org against the data dict.
         Returns the modified (score, level, new_indicators).
         """
         try:
-            active_rules = await crud_rules.get_active_rules()
+            active_rules = await crud_rules.get_active_rules(org_id=org_id)
         except Exception as e:
             logger.error(f"Rule engine failed to fetch rules: {e}")
             return current_score, current_level, []
