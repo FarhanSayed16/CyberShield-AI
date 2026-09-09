@@ -1,6 +1,6 @@
 """
 CyberSentinel AI — Threats Routes
-GET /api/threats — Paginated threat history
+GET /api/threats — Paginated threat history (org-scoped)
 GET /api/threats/{id} — Single threat detail
 """
 
@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.api.deps import require_auth
+from app.api.deps import assert_threat_org_access, require_jwt_or_api_key, require_org_id
 from app.db import crud_threats
 from app.schemas.analyze import AnalyzeResponse
 from app.schemas.threats import ThreatListResponse
@@ -48,16 +48,18 @@ async def list_threats(
     page_size: int = Query(20, ge=1, le=100),
     type: Optional[str] = Query(None, description="Filter by input type: url, text, prompt, image, video"),
     threat_level: Optional[str] = Query(None, description="Filter by level: Safe, Suspicious, High Risk"),
-    threat_type: Optional[str] = Query(None, description="Filter by threat type: phishing, malicious_url, prompt_injection, deepfake, behavior_anomaly, benign"),
-    _api_key: str = Depends(require_auth),
+    threat_type: Optional[str] = Query(None, description="Filter by threat type"),
+    principal=Depends(require_jwt_or_api_key),
 ):
-    """Get paginated threat history with optional filters."""
+    """Paginated threat history — JWT/org token required (no bare API-key cross-org dump)."""
+    org_id = require_org_id(principal)
     items, total = await crud_threats.list_threats(
         page=page,
         page_size=page_size,
         type_filter=type,
         level_filter=threat_level,
         threat_type_filter=threat_type,
+        org_id=org_id,
     )
     return ThreatListResponse(
         items=[_doc_to_response(doc) for doc in items],
@@ -68,26 +70,29 @@ async def list_threats(
 @router.get("/threats/{event_id}", response_model=AnalyzeResponse)
 async def get_threat_detail(
     event_id: str,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
-    """Get a single threat event by ID."""
+    """Get a single threat event by ID (org-scoped)."""
     doc = await crud_threats.get_threat_by_id(event_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Threat event not found")
+    assert_threat_org_access(principal, doc.org_id)
     return _doc_to_response(doc)
+
 
 @router.post("/threats/{event_id}/narrative")
 async def generate_threat_narrative(
     event_id: str,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
-    """Generate an executive summary narrative for the given threat."""
+    """Generate an executive summary narrative for the given threat (org-scoped)."""
     doc = await crud_threats.get_threat_by_id(event_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Threat event not found")
-        
+    assert_threat_org_access(principal, doc.org_id)
+
     from app.clients import gemini_narrative
-    
+
     threat_data = {
         "event_id": doc.event_id,
         "type": doc.type,
@@ -97,7 +102,7 @@ async def generate_threat_narrative(
         "explanation": doc.explanation,
         "key_points": doc.key_points,
     }
-    
+
     result = await gemini_narrative.generate(threat_data)
     return {"narrative": result.get("narrative", "")}
 
@@ -106,19 +111,21 @@ async def generate_threat_narrative(
 async def compare_threats(
     id_1: str,
     id_2: str,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
-    """Compare two threat events and return a diff."""
+    """Compare two threat events in the same organization."""
     doc1 = await crud_threats.get_threat_by_id(id_1)
     doc2 = await crud_threats.get_threat_by_id(id_2)
 
     if not doc1 or not doc2:
         raise HTTPException(status_code=404, detail="One or both threats not found")
 
-    # Compute diffs
+    assert_threat_org_access(principal, doc1.org_id)
+    assert_threat_org_access(principal, doc2.org_id)
+
     score_diff = doc2.risk_score - doc1.risk_score
     level_changed = doc1.threat_level != doc2.threat_level
-    
+
     ind1 = set(doc1.indicators)
     ind2 = set(doc2.indicators)
     added_indicators = list(ind2 - ind1)
@@ -132,6 +139,8 @@ async def compare_threats(
             "level_changed": level_changed,
             "added_indicators": added_indicators,
             "removed_indicators": removed_indicators,
-            "time_elapsed_seconds": (doc2.created_at - doc1.created_at).total_seconds() if doc1.created_at and doc2.created_at else 0
-        }
+            "time_elapsed_seconds": (doc2.created_at - doc1.created_at).total_seconds()
+            if doc1.created_at and doc2.created_at
+            else 0,
+        },
     }

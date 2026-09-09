@@ -1,8 +1,8 @@
 """
 CyberSentinel AI — Stats & Analytics Routes
-GET /api/stats — Aggregated analytics for dashboard charts.
+GET /api/stats — Aggregated analytics for dashboard charts (org-scoped).
 GET /api/analytics/timeline — Hourly time-series threat count
-GET /api/analytics/geo — Geographic threat distribution (simulated)
+GET /api/analytics/geo — Geographic threat distribution (simulated regions)
 """
 
 from datetime import datetime, timedelta, timezone
@@ -11,7 +11,7 @@ import hashlib
 
 from fastapi import APIRouter, Depends
 
-from app.api.deps import require_auth
+from app.api.deps import require_jwt_or_api_key, require_org_id
 from app.db import crud_threats
 from app.schemas.stats import StatsResponse
 from app.db.models import ThreatEventDocument
@@ -21,29 +21,31 @@ router = APIRouter()
 
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats(
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
-    """Get aggregated threat statistics."""
-    data = await crud_threats.get_stats_summary()
+    """Get aggregated threat statistics for the caller's organization."""
+    org_id = require_org_id(principal)
+    data = await crud_threats.get_stats_summary(org_id=org_id)
     return StatsResponse(**data)
 
 
 @router.get("/analytics/timeline")
 async def get_timeline(
     hours: int = 24,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
-    """Get hourly threat counts for the last N hours."""
+    """Get hourly threat counts for the last N hours (org-scoped)."""
+    org_id = require_org_id(principal)
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(hours=hours)
 
     all_docs = await ThreatEventDocument.find(
-        ThreatEventDocument.created_at >= cutoff
+        ThreatEventDocument.org_id == org_id,
+        ThreatEventDocument.created_at >= cutoff,
     ).to_list()
 
-    # Bucket by hour
     hourly = Counter()
-    hourly_by_level = {}  # { hour_key: { Safe: n, Suspicious: n, High Risk: n } }
+    hourly_by_level = {}
 
     for doc in all_docs:
         if doc.created_at:
@@ -56,16 +58,16 @@ async def get_timeline(
             if level in hourly_by_level[hour_key]:
                 hourly_by_level[hour_key][level] += 1
 
-    # Build sorted arrays
     timestamps = sorted(hourly.keys())
     return {
         "timestamps": timestamps,
         "counts": [hourly[t] for t in timestamps],
         "by_level": [hourly_by_level.get(t, {"Safe": 0, "Suspicious": 0, "High Risk": 0}) for t in timestamps],
+        "demo_note": None,
     }
 
 
-# Simulated geo regions based on threat input hashing
+# Simulated geo regions based on threat input hashing (demo analytics only)
 GEO_REGIONS = [
     {"name": "North America", "lat": 39.8, "lng": -98.5},
     {"name": "Europe", "lat": 50.1, "lng": 14.4},
@@ -80,16 +82,17 @@ GEO_REGIONS = [
 
 @router.get("/analytics/geo")
 async def get_geo_distribution(
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
     """
-    Get geographic distribution of threats.
-    Uses deterministic hashing of threat snippets to assign regions consistently.
+    Geographic distribution of threats (deterministic hash of snippets — not real GeoIP).
+    Org-scoped.
     """
-    all_docs = await ThreatEventDocument.find().to_list()
+    org_id = require_org_id(principal)
+    all_docs = await ThreatEventDocument.find(ThreatEventDocument.org_id == org_id).to_list()
 
     region_counts = Counter()
-    region_risk = {}  # { region: { total_risk: n, count: n } }
+    region_risk = {}
 
     for doc in all_docs:
         snippet = doc.raw_input_snippet or doc.event_id or ""
@@ -102,7 +105,6 @@ async def get_geo_distribution(
         region_risk[region_name]["total_risk"] += (doc.risk_score or 0)
         region_risk[region_name]["count"] += 1
 
-    # Build response
     regions = []
     for geo in GEO_REGIONS:
         name = geo["name"]
@@ -118,5 +120,9 @@ async def get_geo_distribution(
             "avg_risk": avg_risk,
         })
 
-    return {"regions": regions, "total": sum(region_counts.values())}
-
+    return {
+        "regions": regions,
+        "total": sum(region_counts.values()),
+        "simulated": True,
+        "note": "Regions are hashed from content for demo charts — not live GeoIP.",
+    }
