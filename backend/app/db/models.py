@@ -28,7 +28,7 @@ class ThreatEventDocument(Document):
 
     event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     type: str  # url | text | prompt | image | video | email | anomaly
-    source: str  # extension | dashboard
+    source: str  # extension | dashboard | history_audit
     raw_input_snippet: str
     threat_type: str  # phishing | malicious_url | prompt_injection | deepfake | benign
     risk_score: int  # 0–100
@@ -41,7 +41,15 @@ class ThreatEventDocument(Document):
     external_flags: Optional[ExternalFlagsEmbed] = None
     severity_label: str = "Informational"  # Informational | Warning | Critical
     advanced_analysis: Optional[dict] = None
+    # Tenancy (Phase 2) — optional until JWT analyze path is default
+    org_id: Optional[str] = None
+    user_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "threat_events"
+        indexes = [
+            "event_id",
+            [("org_id", 1), ("created_at", -1)],
+            [("org_id", 1), ("type", 1), ("created_at", -1)],
+        ]
