@@ -3,38 +3,42 @@ CyberSentinel AI — Threat Report Route
 POST /api/report — Endpoint for receiving manual threat reports + screenshots from the extension.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from loguru import logger
-import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import uuid4
 
-from app.api.deps import require_auth
+from fastapi import APIRouter, Depends
+from loguru import logger
+
+from app.api.deps import principal_org_id, require_jwt_or_api_key
 from app.schemas.report import ThreatReportRequest, ThreatReportResponse
 
 router = APIRouter()
 
+
 @router.post("/report", response_model=ThreatReportResponse)
 async def submit_threat_report(
     request: ThreatReportRequest,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
     """
-    Submit a user-generated threat report with a screenshot.
+    Accept a user-generated threat report with a screenshot.
+
+    v1 does not persist screenshot blobs (no S3/GCS). Returns an accepted id for UX.
     """
-    logger.info(f"📸 Received threat report for URL: {request.url}")
-    
-    # In a full implementation, the screenshot_base64 would be saved to blob storage (AWS S3, GCS)
-    # and a DB record would be created for Security Analysts to review.
-    # For now, we mock the successful persistence.
-    
-    report_id = f"report-{uuid.uuid4().hex[:8]}"
-    
-    logger.info(f"✅ Threat report {report_id} vaulted securely.")
+    org_id = principal_org_id(principal)
+    report_id = f"report-{uuid4().hex[:8]}"
+    logger.info(
+        f"Threat report accepted id={report_id} org={org_id} url_len={len(request.url or '')} "
+        f"persisted=false"
+    )
 
     return ThreatReportResponse(
         id=report_id,
         url=request.url,
-        status="success",
-        message="Screenshot captured and securely submitted to CyberSentinel Dashboard.",
-        created_at=datetime.utcnow().isoformat(),
+        status="accepted_unpersisted",
+        message=(
+            "Report accepted. Screenshot is not stored long-term in v1 "
+            "(no object storage configured)."
+        ),
+        created_at=datetime.now(timezone.utc).isoformat(),
     )

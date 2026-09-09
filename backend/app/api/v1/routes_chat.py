@@ -6,7 +6,7 @@ POST /api/chat — Floating Quickball AI assistant endpoint.
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 
-from app.api.deps import require_auth
+from app.api.deps import require_jwt_or_api_key
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.chat_service import generate_chat_response
 
@@ -16,7 +16,7 @@ router = APIRouter()
 @router.post("/chat", response_model=ChatResponse)
 async def ask_cybersentinel(
     request: ChatRequest,
-    _api_key: str = Depends(require_auth),
+    _principal=Depends(require_jwt_or_api_key),
 ):
     """
     Submits a conversational question to the CyberSentinel AI.
