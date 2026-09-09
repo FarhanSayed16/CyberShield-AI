@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field
 from typing import Literal
 from loguru import logger
 
-from app.api.deps import require_auth
+from app.api.deps import require_jwt_or_api_key
+from app.db.documents_org import Organization, User
 from app.core.security import sanitize_input, validate_url_format
 from app.db import crud_threats
 from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse
@@ -16,20 +17,41 @@ from app.services.threat_router import route_request
 from app.services.rule_engine import rule_engine
 from app.services.remediation import merge_remediation_actions
 from app.services.risk_engine import map_threat_level, map_severity
+from app.services.plans import assert_analyze_quota
 
 router = APIRouter()
+
+
+def _tenancy_ids(principal) -> tuple[str | None, str | None]:
+    if isinstance(principal, User):
+        return str(principal.org_id), str(principal.id)
+    if isinstance(principal, Organization):
+        return str(principal.id), None
+    return None, None
+
+
+async def _org_for_quota(principal) -> Organization | None:
+    if isinstance(principal, User):
+        return await Organization.get(principal.org_id)
+    if isinstance(principal, Organization):
+        return principal
+    return None
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_threat(
     request: AnalyzeRequest,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
     """
     Submit content for threat analysis.
     Routes to the correct AI agent(s) based on input type.
+    Accepts JWT (org-scoped), org token, or legacy X-API-Key.
     """
     logger.info(f"📥 Analyze request: type={request.type} source={request.source} len={len(request.content)}")
+    org_id, user_id = _tenancy_ids(principal)
+    org = await _org_for_quota(principal)
+    await assert_analyze_quota(org)
 
     # Sanitize input
     content = sanitize_input(request.content)
@@ -56,7 +78,7 @@ async def analyze_threat(
             "threat_type": decision.threat_type
         }
         mod_score, mod_level, added_inds = await rule_engine.evaluate_rules(
-            rule_data_ctx, decision.risk_score, decision.threat_level
+            rule_data_ctx, decision.risk_score, decision.threat_level, org_id=org_id
         )
         decision.risk_score = mod_score
         decision.threat_level = mod_level
@@ -88,6 +110,8 @@ async def analyze_threat(
             "external_flags": decision.external_flags,
             "severity_label": decision.severity_label,
             "advanced_analysis": decision.advanced_analysis,
+            "org_id": org_id,
+            "user_id": user_id,
         }
 
         # Persist to MongoDB
@@ -127,7 +151,7 @@ from app.schemas.analyze import DomainReputationResponse
 @router.get("/analyze/domain", response_model=DomainReputationResponse)
 async def check_domain_reputation(
     url: str = Query(..., description="The URL to analyze for domain reputation"),
-    _api_key: str = Depends(require_auth)
+    _principal=Depends(require_jwt_or_api_key),
 ):
     """
     Perform a live intelligence check on a domain.
@@ -173,7 +197,7 @@ class BatchAnalyzeRequest(BaseModel):
 @router.post("/analyze/batch")
 async def analyze_batch(
     request: BatchAnalyzeRequest,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
     """
     Perform a batch analysis of multiple URLs (used for History Audit).
@@ -182,22 +206,56 @@ async def analyze_batch(
     """
     import asyncio
 
+    org_id, user_id = _tenancy_ids(principal)
+    org = await _org_for_quota(principal)
+    # Charge one analyze quota unit per URL in the batch
+    if org is not None:
+        from app.services.plans import plan_limits, count_analyzes_today
+
+        limits = plan_limits(org)
+        used = await count_analyzes_today(str(org.id))
+        n = len([u for u in request.urls if u.strip()])
+        if used + n > int(limits["analyzes_per_day"]):
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": {
+                        "code": "QUOTA_ANALYZES",
+                        "message": (
+                            f"Batch would exceed daily analyze quota "
+                            f"({limits['analyzes_per_day']}/day on {limits['label']})."
+                        ),
+                        "upgrade_url": "/ai/billing",
+                        "plan": limits["plan"],
+                    }
+                },
+            )
+    else:
+        await assert_analyze_quota(org)
+
     sem = asyncio.Semaphore(5)
-    
+
     async def analyze_single(url: str):
         async with sem:
             try:
                 decision = await route_request("url", url, request.source, "tier1")
-                
-                # Evaluate Custom Rules (B4)
-                rule_data = {"type": "url", "source": request.source, "url": url, "domain": url.split('/')[2] if "://" in url else "", "threat_type": decision.threat_type}
-                ms, ml, a_ind = await rule_engine.evaluate_rules(rule_data, decision.risk_score, decision.threat_level)
+
+                rule_data = {
+                    "type": "url",
+                    "source": request.source,
+                    "url": url,
+                    "domain": url.split("/")[2] if "://" in url else "",
+                    "threat_type": decision.threat_type,
+                }
+                ms, ml, a_ind = await rule_engine.evaluate_rules(
+                    rule_data, decision.risk_score, decision.threat_level, org_id=org_id
+                )
                 decision.risk_score = ms
                 decision.threat_level = ml
                 if a_ind:
                     decision.indicators.extend(a_ind)
                     decision.indicators = list(set(decision.indicators))
-                    
+
                 remediation_actions = merge_remediation_actions(
                     decision.recommended_actions,
                     decision.threat_type,
@@ -205,13 +263,35 @@ async def analyze_batch(
                     decision.indicators,
                 )
 
+                if org_id:
+                    await crud_threats.create_threat_event(
+                        {
+                            "type": "url",
+                            "source": request.source,
+                            "raw_input_snippet": url[:200],
+                            "threat_type": decision.threat_type,
+                            "risk_score": decision.risk_score,
+                            "threat_level": decision.threat_level,
+                            "confidence": decision.confidence,
+                            "indicators": decision.indicators,
+                            "explanation": decision.explanation,
+                            "key_points": decision.key_points,
+                            "recommended_actions": remediation_actions,
+                            "external_flags": decision.external_flags,
+                            "severity_label": decision.severity_label,
+                            "advanced_analysis": decision.advanced_analysis,
+                            "org_id": org_id,
+                            "user_id": user_id,
+                        }
+                    )
+
                 return {
                     "url": url,
                     "threat_type": decision.threat_type,
                     "risk_score": decision.risk_score,
                     "threat_level": decision.threat_level,
                     "indicators": decision.indicators,
-                    "recommended_actions": remediation_actions
+                    "recommended_actions": remediation_actions,
                 }
             except Exception as e:
                 logger.error(f"Batch analysis failed for {url}: {e}")
@@ -222,11 +302,10 @@ async def analyze_batch(
                     "threat_level": "Unknown",
                     "indicators": ["Analysis failed"],
                 }
-            
-    # Run all URLs concurrently (bounded by semaphore)
+
     tasks = [analyze_single(url) for url in request.urls if url.strip()]
     results = await asyncio.gather(*tasks)
-    
+
     return {"results": results}
 
 
@@ -242,12 +321,16 @@ class EmailAnalyzeRequest(AnalyzeRequest):
 @router.post("/analyze/email")
 async def analyze_email(
     request: AnalyzeRequest,
-    _api_key: str = Depends(require_auth),
+    principal=Depends(require_jwt_or_api_key),
 ):
     """
     Analyze a raw .eml file (base64-encoded in `content`).
     Extracts headers, body text, URLs, and attachments, then runs AI analysis.
     """
+    org_id, user_id = _tenancy_ids(principal)
+    org = await _org_for_quota(principal)
+    await assert_analyze_quota(org)
+
     try:
         # Decode the base64 .eml content
         raw_bytes = base64.b64decode(request.content)
@@ -273,6 +356,23 @@ async def analyze_email(
             decision.indicators + email_data["flags"],
         )
 
+        rule_data_ctx = {
+            "type": "email",
+            "source": request.source,
+            "url": "",
+            "domain": "",
+            "threat_type": decision.threat_type,
+        }
+        mod_score, mod_level, added_inds = await rule_engine.evaluate_rules(
+            rule_data_ctx, boosted_score, boosted_level, org_id=org_id
+        )
+        boosted_score = mod_score
+        boosted_level = mod_level
+        indicators = decision.indicators + email_data["flags"]
+        if added_inds:
+            indicators.extend(added_inds)
+            indicators = list(set(indicators))
+
         # Persist
         snippet = f"Email from {email_data['sender']}: {email_data['subject']}"
         db_data = {
@@ -283,12 +383,14 @@ async def analyze_email(
             "risk_score": boosted_score,
             "threat_level": boosted_level,
             "confidence": decision.confidence,
-            "indicators": decision.indicators + email_data["flags"],
+            "indicators": indicators,
             "explanation": decision.explanation,
             "key_points": decision.key_points,
             "recommended_actions": decision.recommended_actions,
             "external_flags": decision.external_flags,
             "severity_label": boosted_severity,
+            "org_id": org_id,
+            "user_id": user_id,
             "advanced_analysis": {
                 "email_headers": {
                     "from": email_data["sender"],
@@ -313,7 +415,7 @@ async def analyze_email(
             "risk_score": boosted_score,
             "threat_level": boosted_level,
             "confidence": decision.confidence,
-            "indicators": decision.indicators + email_data["flags"],
+            "indicators": indicators,
             "explanation": decision.explanation,
             "key_points": decision.key_points,
             "recommended_actions": decision.recommended_actions,
