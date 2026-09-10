@@ -31,4 +31,13 @@ async def explain(
         return result
     except Exception as e:
         logger.error(f"Explanation agent error: {e}")
-        return {"summary_text": "Analysis completed.", "key_points": ["AI engine processed the input."]}
+        if risk_score >= 70:
+            summary = "High-risk signals detected (AI explanation unavailable)."
+        elif risk_score >= 40:
+            summary = "Suspicious signals detected (AI explanation unavailable)."
+        else:
+            summary = "Low risk from available signals (AI explanation unavailable)."
+        return {
+            "summary_text": summary,
+            "key_points": indicators[:5] or ["Local / fused scoring was used without Gemini."],
+        }

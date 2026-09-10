@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # AI Agents
     GEMINI_API_KEYS: str = ""
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
+    # Primary model; client falls back if this model is unavailable for a key
+    GEMINI_MODEL: str = "gemini-2.5-flash-lite"
     USE_MOCK_AGENTS: bool = False
 
     SAFE_BROWSING_API_KEY: str = ""

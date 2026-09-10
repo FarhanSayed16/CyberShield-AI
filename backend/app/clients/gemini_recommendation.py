@@ -31,4 +31,20 @@ async def recommend(
         return result
     except Exception as e:
         logger.error(f"Recommendation agent error: {e}")
-        return {"severity_label": "Informational", "actions": ["No action required. Content appears safe."]}
+        if risk_score >= 70:
+            actions = [
+                "Do not enter credentials or payment details on this page.",
+                "Close the tab if this visit was unexpected.",
+                "Report the URL to your security team.",
+            ]
+            severity = "Critical"
+        elif risk_score >= 40:
+            actions = [
+                "Verify the domain carefully before continuing.",
+                "Avoid sharing sensitive information.",
+            ]
+            severity = "Warning"
+        else:
+            actions = ["Monitor as usual."]
+            severity = "Informational"
+        return {"severity_label": severity, "actions": actions}
