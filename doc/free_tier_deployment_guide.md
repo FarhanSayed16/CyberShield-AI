@@ -17,7 +17,7 @@ Deploy the platform at zero recurring cost by splitting the stack across free ho
 | **Heavy ML Models** (optional) | PyTorch / sklearn | Self-host / HF Space (`HF_API_URL`) |
 | **Browser Extension** | Chrome MV3 | Load unpacked (or Chrome Web Store later) |
 
-> **Render memory limit:** Free tier is ~512 MB RAM. Do **not** load Torch/transformers on Render. Leave `HF_API_URL` empty for Gemini-only, or point it at a separately hosted `cybersentinel-ml-api`.
+> **Render memory limit:** Free tier is ~512 MB RAM. Do **not** load Torch/transformers on Render. Leave `HF_API_URL` empty for Gemini-only. Optional remote classifiers are a post-v1 add-on (host your own inference URL if needed).
 
 ---
 
@@ -57,13 +57,7 @@ This is the simplest **fully free** deploy.
 
 ### Optional later (if you want local models)
 
-| Option | Cost | Notes |
-| :--- | :--- | :--- |
-| Hugging Face PRO + Docker Space | Paid (~PRO) | Upload `cybersentinel-ml-api/` — see `cybersentinel-ml-api/HF_UPLOAD_GUIDE.md` |
-| Second host with more RAM | Often paid / trials | Railway, Fly.io, Koyeb — deploy `cybersentinel-ml-api` there, set `HF_API_URL` |
-| Light sklearn-only API | Free on Render if it fits 512MB | URL/text `.pkl` only — no Torch/deepfake |
-
-Your model files are already prepared under `cybersentinel-ml-api/models/` when you need them.
+Leave `HF_API_URL` empty for v1. If you later host your own inference service, point `HF_API_URL` at it — the backend client in `backend/app/clients/hf_ml.py` already supports that. The former in-repo `cybersentinel-ml-api/` + weight dumps were removed from the monorepo to keep the tree lean.
 
 ---
 
