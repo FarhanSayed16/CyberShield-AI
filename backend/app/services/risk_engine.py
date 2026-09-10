@@ -44,35 +44,49 @@ def score_url(
     safe_browsing: Optional[str],
     virustotal_positives: Optional[int] = None,
     virustotal_total_engines: Optional[int] = None,
+    heuristic_score: Optional[int] = None,
 ) -> RiskResult:
     """
     Weighted fusion for URL analysis.
 
-    Weights:
-      - LLM agent risk_score: 50%
-      - Safe Browsing evidence: 25%
-      - VirusTotal evidence: 15%
-      - Heuristics: 10%
+    When Gemini is available:
+      - LLM 45% + Safe Browsing 25% + VirusTotal 15% + Heuristics 15%
+    When Gemini is unavailable (None / error):
+      - Heuristics 60% + Safe Browsing 25% + VirusTotal 15%
+      (avoids inventing a fake "safe" LLM score of 0)
+    Final score is also max()'d with strong heuristic / intel signals.
     """
-    llm_score = gemini_result.get("risk_score", 50) if gemini_result else 50
+    has_llm = isinstance(gemini_result, dict) and "error" not in gemini_result
+    llm_score = int(gemini_result.get("risk_score", 50)) if has_llm else None
+    heuristic = int(heuristic_score or 0)
 
-    # Safe Browsing boost
     sb_boost = 0
     if safe_browsing and safe_browsing in ("PHISHING", "MALWARE", "SOCIAL_ENGINEERING"):
         sb_boost = 100
 
-    # VirusTotal boost
     vt_boost = 0
     if virustotal_positives is not None and virustotal_total_engines:
         vt_ratio = virustotal_positives / max(virustotal_total_engines, 1)
-        vt_boost = min(100, int(vt_ratio * 200))  # Scale to 0-100
+        vt_boost = min(100, int(vt_ratio * 200))
 
-    # Simple heuristic (placeholder)
-    heuristic = 0
+    if has_llm and llm_score is not None:
+        final = int(
+            0.45 * llm_score
+            + 0.25 * sb_boost
+            + 0.15 * vt_boost
+            + 0.15 * heuristic
+        )
+    else:
+        final = int(0.60 * heuristic + 0.25 * sb_boost + 0.15 * vt_boost)
 
-    final = int(0.50 * llm_score + 0.25 * sb_boost + 0.15 * vt_boost + 0.10 * heuristic)
+    # Never let a weak LLM wipe a strong local / intel signal
+    final = max(final, heuristic if heuristic >= 40 else final)
+    if sb_boost >= 100:
+        final = max(final, 85)
+    if vt_boost >= 50:
+        final = max(final, min(100, vt_boost))
+
     final = max(0, min(100, final))
-
     threat_level = _map_threat_level(final)
     return RiskResult(
         risk_score=final,
