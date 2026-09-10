@@ -128,12 +128,13 @@ def analyze_url_heuristics(url: str) -> dict:
         threat_type = "malicious_url"
 
     labels = host.split(".") if host else []
-    if len(labels) >= 4:
+    is_ip = bool(host and _IP_HOST_RE.match(host))
+    if not is_ip and len(labels) >= 4:
         indicators.append("Excessive subdomain depth")
-        score = max(score, score + 12)
+        score = max(score, min(100, score + 12))
 
     tld = labels[-1] if labels else ""
-    if tld in _SUSPICIOUS_TLDS:
+    if not is_ip and tld in _SUSPICIOUS_TLDS:
         indicators.append(f"Suspicious TLD .{tld}")
         score = max(score, 40)
 
