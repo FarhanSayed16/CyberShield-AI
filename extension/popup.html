@@ -2,10 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>CyberSentinel AI</title>
+  <title>CyberSentinel</title>
   <style>
     body {
-      width: 320px;
+      width: 340px;
       margin: 0;
       padding: 0;
       font-family: system-ui, -apple-system, sans-serif;
@@ -23,7 +23,7 @@
     .logo {
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+      background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -32,25 +32,23 @@
     }
     .title { font-weight: 700; font-size: 16px; margin: 0; }
     .subtitle { font-size: 11px; color: #94A3B8; margin: 0; }
-    
     .content { padding: 16px; }
-    
     .status-card {
       background: rgba(16, 185, 129, 0.1);
       border: 1px solid rgba(16, 185, 129, 0.2);
       border-radius: 12px;
-      padding: 16px;
+      padding: 14px;
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-    .status-icon { color: #10B981; font-size: 24px; margin-bottom: 8px; }
     .status-text { color: #10B981; font-weight: 600; font-size: 14px; }
-    
+    .status-text.inactive { color: #F59E0B; }
     .settings {
       background: #1E293B;
       border: 1px solid #334155;
       border-radius: 12px;
       overflow: hidden;
+      margin-bottom: 12px;
     }
     .setting-item {
       padding: 12px 16px;
@@ -60,11 +58,8 @@
       align-items: center;
     }
     .setting-item:last-child { border-bottom: none; }
-    
     .setting-info h4 { margin: 0 0 4px 0; font-size: 13px; font-weight: 600; }
     .setting-info p { margin: 0; font-size: 11px; color: #94A3B8; }
-    
-    /* Toggle switch CSS */
     .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -75,41 +70,31 @@
       position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px;
       background-color: white; transition: .4s; border-radius: 50%;
     }
-    input:checked + .slider { background-color: #8B5CF6; }
+    input:checked + .slider { background-color: #3B82F6; }
     input:checked + .slider:before { transform: translateX(14px); }
-    
-    .footer {
-      padding: 16px;
-      text-align: center;
+    label.field { display: block; font-size: 10px; color: #94A3B8; margin-top: 6px; }
+    input.field {
+      width: 100%; margin-top: 2px; padding: 6px; box-sizing: border-box;
+      background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;
     }
     .btn {
-      display: inline-block;
-      width: 100%;
-      padding: 10px;
-      background: #8B5CF6;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 13px;
-      text-decoration: none;
-      cursor: pointer;
-      box-sizing: border-box;
-      text-align: center;
+      display: inline-block; width: 100%; padding: 10px; background: #3B82F6; color: white;
+      border: none; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none;
+      cursor: pointer; box-sizing: border-box; text-align: center;
     }
-    .btn:hover { background: #7C3AED; }
-    
-    .tabs { display: flex; border-bottom: 1px solid #334155; margin-bottom: 16px; }
-    .tab-btn { flex: 1; padding: 10px; background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 13px; font-weight: 600; border-bottom: 2px solid transparent; }
-    .tab-btn.active { color: #8B5CF6; border-bottom-color: #8B5CF6; }
-    .tab-btn:focus-visible,
-    .btn:focus-visible,
-    input:focus-visible,
-    button:focus-visible {
-      outline: 2px solid #A78BFA;
-      outline-offset: 2px;
+    .btn:hover { background: #2563EB; }
+    .btn-secondary { background: #475569; margin-top: 8px; font-size: 11px; padding: 6px; }
+    .footer { padding: 0 16px 16px; text-align: center; }
+    .hint { font-size: 10px; color: #64748B; margin: 8px 0 0; line-height: 1.4; }
+    .tabs { display: flex; border-bottom: 1px solid #334155; margin-bottom: 14px; }
+    .tab-btn {
+      flex: 1; padding: 10px; background: none; border: none; color: #94A3B8; cursor: pointer;
+      font-size: 12px; font-weight: 600; border-bottom: 2px solid transparent;
     }
-    
+    .tab-btn.active { color: #3B82F6; border-bottom-color: #3B82F6; }
+    .tab-btn:focus-visible, .btn:focus-visible, input:focus-visible, button:focus-visible {
+      outline: 2px solid #93C5FD; outline-offset: 2px;
+    }
     .network-log { background: #1E293B; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 11px; }
     .log-url { color: #E2E8F0; word-break: break-all; margin-bottom: 4px; font-family: monospace; }
     .log-meta { display: flex; justify-content: space-between; color: #94A3B8; }
@@ -117,32 +102,34 @@
     .risk-Safe { background: rgba(16, 185, 129, 0.2); color: #10B981; }
     .risk-Suspicious { background: rgba(245, 158, 11, 0.2); color: #F59E0B; }
     .risk-High { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
+    #save-msg { color: #10B981; font-size: 10px; margin-top: 4px; text-align: center; display: none; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="logo">🛡️</div>
+    <div class="logo" aria-hidden="true">CS</div>
     <div>
-      <h1 class="title">CyberSentinel AI</h1>
-      <p class="subtitle">Active Protection</p>
+      <h1 class="title">CyberSentinel</h1>
+      <p class="subtitle">AI Guard + Threat Explainer</p>
     </div>
   </div>
-  
+
   <div class="content">
     <div class="tabs">
       <button type="button" class="tab-btn active" data-target="tab-status" aria-label="Status tab">Status</button>
-      <button type="button" class="tab-btn" id="network-tab-btn" data-target="tab-network" aria-label="Network logs tab">Network Logs</button>
+      <button type="button" class="tab-btn" data-target="tab-config" aria-label="Config tab">Config</button>
+      <button type="button" class="tab-btn" id="network-tab-btn" data-target="tab-network" aria-label="Network logs tab">Network</button>
     </div>
-    
+
     <div id="tab-status" class="tab-pane" style="display: block;">
       <div class="status-card">
-        <div class="status-icon" id="popup-status-icon">✓</div>
-        <div class="status-text" id="popup-status-text">Browser is Protected</div>
-        <div style="font-size: 11px; color: #94A3B8; margin-top: 4px;" id="popup-status-subtext">Real-time scanning enabled</div>
-        <div style="font-size: 11px; color: #8B5CF6; margin-top: 8px; font-weight: 600;" id="popup-threat-count">Loading...</div>
-        <div style="font-size: 10px; color: #64748B; margin-top: 2px;" id="popup-last-scan"></div>
+        <div class="status-text" id="popup-status-text">Not configured</div>
+        <div style="font-size: 11px; color: #94A3B8; margin-top: 4px;" id="popup-status-subtext">
+          Set org &amp; user tokens under Config
+        </div>
+        <div style="font-size: 11px; color: #3B82F6; margin-top: 8px; font-weight: 600;" id="popup-threat-count"></div>
       </div>
-      
+
       <div class="settings">
         <div class="setting-item">
           <div class="setting-info">
@@ -157,43 +144,49 @@
         <div class="setting-item">
           <div class="setting-info">
             <h4>Context Menu Scan</h4>
-            <p>Right-click text to analyze</p>
+            <p>Right-click text or links to analyze</p>
           </div>
-          <label class="switch" aria-label="Context menu scan (always on)">
+          <label class="switch" aria-label="Context menu scan always on">
             <input type="checkbox" checked disabled aria-label="Context menu scan always enabled">
             <span class="slider"></span>
           </label>
         </div>
-        <div class="setting-item" style="flex-direction: column; align-items: stretch;">
-          <div class="setting-info" style="margin-bottom: 8px;">
-            <h4>API Configuration</h4>
-            <p>Backend URL, API key, and dashboard URL</p>
-          </div>
-          <label for="api-url-input" style="font-size: 10px; color: #94A3B8; margin-top: 4px;">API URL</label>
-          <input type="text" id="api-url-input" aria-label="Backend API URL" placeholder="http://localhost:8000/api" style="width: 100%; margin-top: 2px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;">
-          <label for="api-key-input" style="font-size: 10px; color: #94A3B8; margin-top: 6px;">API key</label>
-          <input type="password" id="api-key-input" aria-label="API key" placeholder="Enter API Key" style="width: 100%; margin-top: 2px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;">
-          <label for="dashboard-url-input" style="font-size: 10px; color: #94A3B8; margin-top: 6px;">Dashboard URL</label>
-          <input type="text" id="dashboard-url-input" aria-label="Dashboard base URL" placeholder="http://localhost:5173" style="width: 100%; margin-top: 2px; padding: 6px; box-sizing: border-box; background: #0F172A; color: white; border: 1px solid #334155; border-radius: 4px; font-size: 11px;" title="Dashboard base URL">
-          <button id="save-api-btn" type="button" aria-label="Save API settings" style="margin-top: 8px; width: 100%; padding: 6px; background: #475569; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">Save Settings</button>
-          <div id="save-api-msg" style="color: #10B981; font-size: 10px; margin-top: 4px; text-align: center; display: none;">Saved successfully!</div>
+      </div>
+    </div>
+
+    <div id="tab-config" class="tab-pane" style="display: none;">
+      <div class="settings" style="padding: 12px 16px;">
+        <div class="setting-info" style="margin-bottom: 8px;">
+          <h4>Employee identity</h4>
+          <p>Tokens from admin → Org Settings / Team</p>
         </div>
+        <label class="field" for="api-base-input">API URL (origin)</label>
+        <input class="field" type="text" id="api-base-input" aria-label="API base URL" placeholder="http://localhost:8000" autocomplete="off">
+        <label class="field" for="org-token-input">Org token</label>
+        <input class="field" type="password" id="org-token-input" aria-label="Organization token" placeholder="aisnl_org_…" autocomplete="off">
+        <label class="field" for="user-token-input">User token</label>
+        <input class="field" type="password" id="user-token-input" aria-label="User token" placeholder="aisnl_usr_…" autocomplete="off">
+        <label class="field" for="dashboard-url-input">Dashboard URL</label>
+        <input class="field" type="text" id="dashboard-url-input" aria-label="Dashboard base URL" placeholder="http://localhost:5173" autocomplete="off">
+        <button id="save-config-btn" type="button" class="btn btn-secondary" aria-label="Save configuration">Save</button>
+        <div id="save-msg">Saved</div>
+        <p class="hint">Do not paste a shared API key. Org + user tokens identify you in AI Events.</p>
       </div>
     </div>
 
     <div id="tab-network" class="tab-pane" style="display: none; max-height: 350px; overflow-y: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <span style="font-size: 11px; color: #94A3B8;">Outbound requests (this tab)</span>
-        <button type="button" id="refresh-network-btn" aria-label="Refresh network logs" style="background: none; border: none; color: #8B5CF6; cursor: pointer; font-size: 11px;">Refresh</button>
+        <button type="button" id="refresh-network-btn" aria-label="Refresh network logs" style="background: none; border: none; color: #3B82F6; cursor: pointer; font-size: 11px;">Refresh</button>
       </div>
       <div id="network-log-container">
         <div style="text-align: center; padding: 20px; color: #64748B; font-size: 12px;">Loading logs...</div>
       </div>
     </div>
   </div>
-  
+
   <div class="footer">
-    <a href="http://localhost:5173" target="_blank" class="btn" id="open-dashboard-link">Open Full Dashboard</a>
+    <a href="#" target="_blank" class="btn" id="open-dashboard-link">Open dashboard</a>
   </div>
 
   <script src="popup.js"></script>

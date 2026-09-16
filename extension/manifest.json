@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "CyberSentinel AI",
-  "version": "1.0",
-  "description": "AI-powered cyber defense assistant. Detects and explains phishing, malicious URLs, and prompt injection in real-time.",
+  "name": "CyberSentinel",
+  "version": "1.2.1",
+  "description": "AI workplace monitoring for ChatGPT, Claude, and Gemini — plus explainable phishing and prompt-injection defense.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -10,11 +10,18 @@
     "contextMenus",
     "webNavigation",
     "history",
-    "webRequest"
+    "webRequest",
+    "alarms",
+    "tabs"
   ],
   "host_permissions": [
-    "<all_urls>",
-    "http://localhost:8000/*"
+    "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["<all_urls>"]
+    }
   ],
   "background": {
     "service_worker": "background.js"
@@ -22,12 +29,70 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "js": ["content.js", "quickball.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://www.chatgpt.com/*"
+      ],
+      "js": [
+        "utils/helpers.js",
+        "engine/audit-rules.js",
+        "engine/tokenizer.js",
+        "ui/jit-overlay.js",
+        "lineage/lineage.js",
+        "ui/blackout.js",
+        "engine/response-monitor.js",
+        "ai-content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": [
+        "utils/helpers.js",
+        "engine/audit-rules.js",
+        "engine/tokenizer.js",
+        "ui/jit-overlay.js",
+        "lineage/lineage.js",
+        "ui/blackout.js",
+        "engine/response-monitor.js",
+        "ai-content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": [
+        "utils/helpers.js",
+        "engine/audit-rules.js",
+        "engine/tokenizer.js",
+        "ui/jit-overlay.js",
+        "lineage/lineage.js",
+        "ui/blackout.js",
+        "engine/response-monitor.js",
+        "ai-content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.google.com/*", "https://google.com/*"],
+      "js": [
+        "utils/helpers.js",
+        "engine/audit-rules.js",
+        "ui/blackout.js",
+        "ai-content.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "action": {
     "default_popup": "popup.html",
+    "default_title": "CyberSentinel",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

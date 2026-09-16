@@ -1,7 +1,7 @@
 // Content Script injected into pages
 
 const OVERLAY_ID = 'cybersentinel-overlay-root';
-const DEFAULT_DASHBOARD_BASE = 'http://localhost:5173';
+const DEFAULT_DASHBOARD_BASE = '';
 let _dashboardBaseUrl = DEFAULT_DASHBOARD_BASE;
 
 function escapeHtml(str) {
@@ -45,10 +45,16 @@ loadDashboardBaseUrl();
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "showScanOverlay") {
     updateQuickballState('Scanning...');
+    if (window.__csQbApi && window.__csQbApi.showInlineLoading) {
+      window.__csQbApi.showInlineLoading();
+    }
   } else if (request.action === "updateScanOverlay") {
     updateQuickballWithResult(request.result);
   } else if (request.action === "scanOverlayError") {
     showToast("CyberSentinel Error", request.error, 'error');
+    if (window.__csQbApi && window.__csQbApi.scanFailed) {
+      window.__csQbApi.scanFailed(request.error || 'Scan failed');
+    }
   } else if (request.action === "showWarningBlocker") {
     createFullPageBlocker(request.data);
   } else if (request.action === "aiAssistantResponse") {
@@ -218,398 +224,9 @@ function createFullPageBlocker(data) {
   });
 }
 
-function injectQuickball() {
-  if (document.getElementById('cybersentinel-quickball')) return;
+/* Quickball UI lives in quickball.js (Shadow DOM) — see window.__csQbApi */
 
-  // 1. Inject Toast Container
-  const toastContainer = document.createElement('div');
-  toastContainer.id = 'cybersentinel-toast-container';
-  document.body.appendChild(toastContainer);
-
-  // 2. Inject Menu
-  const menu = document.createElement('div');
-  menu.id = 'cybersentinel-qb-menu';
-  menu.innerHTML = `
-    <div class="cs-qb-menu-header" style="display:flex; justify-content:space-between; align-items:center;">
-        CYBERSENTINEL ACTION CENTER
-        <span class="cs-verified-badge" id="cs-qb-domain-badge">Analysing...</span>
-    </div>
-
-    <div class="cs-score-meter-container">
-        <div class="cs-score-meter-header">
-            <span>Page Security Score</span>
-            <span id="cs-qb-score-text">100%</span>
-        </div>
-        <div class="cs-score-meter-bar">
-            <div class="cs-score-meter-fill" id="cs-qb-score-fill" style="width: 100%;"></div>
-        </div>
-    </div>
-
-    <button class="cs-qb-menu-btn cs-qb-menu-btn-primary" id="cs-qb-btn-dashboard"><span>📊</span> Open Dashboard</button>
-
-    <!-- ═══ TIER SELECTION ═══ -->
-    <div class="cs-control-group">
-      <label class="cs-control-label">⚙ AI Engine Tier</label>
-      <select class="cs-tier-select" id="cs-tier-select">
-        <option value="auto" selected>Auto — Gemini + optional ML</option>
-        <option value="1">Tier 1 — Heuristics / remote ML</option>
-        <option value="2">Tier 2 — Enrichment / remote ML</option>
-        <option value="3">Tier 3 — Gemini AI</option>
-      </select>
-    </div>
-
-    <!-- ═══ TEXT/URL SCAN ═══ -->
-    <div class="cs-control-group">
-      <label class="cs-control-label">🔍 Scan Content</label>
-      <select class="cs-scan-type-select" id="cs-scan-type">
-        <option value="url">Malicious URL Detection</option>
-        <option value="text">Phishing Email / Text</option>
-        <option value="prompt">AI Prompt Injection</option>
-      </select>
-      <div class="cs-scan-input-row">
-        <input type="text" class="cs-scan-input" id="cs-scan-input" placeholder="Paste URL or text here...">
-        <button class="cs-scan-submit" id="cs-scan-submit">⏎</button>
-      </div>
-    </div>
-
-    <!-- ═══ FILE UPLOAD (Deepfake) ═══ -->
-    <div class="cs-control-group">
-      <label class="cs-control-label">📎 Deepfake Detection</label>
-      <div class="cs-upload-zone" id="cs-upload-zone">
-        <span class="cs-upload-icon" id="cs-upload-icon">🖼️</span>
-        <img id="cs-upload-preview" style="display:none; max-width: 100%; max-height: 120px; border-radius: 8px; margin-bottom: 8px; object-fit: contain;">
-        <span class="cs-upload-text" id="cs-upload-text">Upload Image or Video</span>
-        <span class="cs-upload-hint" id="cs-upload-hint">png, jpg, jpeg, mp4</span>
-        <input type="file" id="cs-file-input" accept=".png,.jpg,.jpeg,.mp4" style="display:none;">
-      </div>
-      <button class="cs-scan-submit-wide" id="cs-upload-submit" style="display:none; width:100%; margin-top:8px;">Send for Analysis ➔</button>
-    </div>
-
-    <!-- ═══ LIVE DETECTION TOGGLE ═══ -->
-    <div class="cs-live-detection-row">
-      <span>🔴 Live Page Detection</span>
-      <label class="cs-toggle-switch">
-        <input type="checkbox" id="cs-live-toggle" checked>
-        <span class="cs-toggle-slider"></span>
-      </label>
-    </div>
-
-    <!-- ═══ EXISTING ACTION BUTTONS ═══ -->
-    <button class="cs-qb-menu-btn" id="cs-qb-btn-scan"><span>🔍</span> Manual Page Scan</button>
-    <button class="cs-qb-menu-btn" id="cs-qb-btn-protect"><span>🛡️</span> Toggle Protection</button>
-    <button class="cs-qb-menu-btn" id="cs-qb-btn-chat"><span>💬</span> Ask CyberSentinel</button>
-
-    <!-- ═══ INLINE RESULTS PANEL (hidden until scan) ═══ -->
-    <div id="cs-inline-results" class="cs-inline-results" style="display:none;">
-      <div class="cs-results-header">
-        <span class="cs-results-title">📋 Analysis Results</span>
-        <button class="cs-results-close" id="cs-results-close">✕</button>
-      </div>
-      <div id="cs-results-loading" style="display:none;">
-        <div class="cs-results-scanning">
-          <div class="cs-scan-spinner"></div>
-          <span>Analyzing with AI Engine...</span>
-        </div>
-      </div>
-      <div id="cs-results-body" style="display:none;">
-        <div class="cs-kpi-row" id="cs-kpi-row"></div>
-        <div class="cs-results-explanation" id="cs-results-explanation"></div>
-        <div class="cs-results-indicators" id="cs-results-indicators"></div>
-        <div class="cs-results-actions" id="cs-results-actions"></div>
-        <div id="cs-results-advanced"></div>
-        <a class="cs-results-view-full" id="cs-results-view-full" href="#" target="_blank">View Full Report →</a>
-      </div>
-    </div>
-
-    <div id="cs-advanced-analysis" style="display: none;"></div>
-
-    <div class="cs-soc-timeline" id="cs-soc-timeline">
-        <div class="cs-soc-entry"><span class="cs-soc-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span><span class="cs-soc-event">System initialized.</span></div>
-    </div>
-
-    <div class="cs-health-monitor">
-        <span><span class="cs-health-dot"></span>Engine Online</span>
-        <span id="cs-qb-risk-status">Safe</span>
-    </div>
-
-    <div id="cybersentinel-ai-panel">
-        <div class="cs-ai-chat-history" id="cs-ai-chat-history">
-            <div class="cs-msg-ai">Hi! I am CyberSentinel. Ask me anything about this page's safety.</div>
-        </div>
-        <div class="cs-ai-input-wrap">
-            <input type="text" class="cs-ai-input" id="cs-ai-input" placeholder="Ask a question...">
-            <button class="cs-ai-send" id="cs-ai-send">➔</button>
-        </div>
-    </div>
-  `;
-  document.body.appendChild(menu);
-
-  // 3. Inject Quickball
-  const quickball = document.createElement('div');
-  quickball.id = 'cybersentinel-quickball';
-  quickball.className = 'quickball-safe';
-  quickball.innerHTML = `
-    <div class="cs-radar-ring" style="display:none;" id="cs-qb-radar"></div>
-    <div class="cs-qb-icon">🛡️</div>
-  `;
-  document.body.appendChild(quickball);
-
-  // Restore Saved Position
-  chrome.storage.local.get(['qbPosition'], (result) => {
-    if (result.qbPosition) {
-      quickball.style.left = result.qbPosition.x + 'px';
-      quickball.style.top = result.qbPosition.y + 'px';
-    }
-  });
-
-  // 4. Drag & Drop Physics
-  let isDragging = false;
-  let startX, startY, initialX, initialY;
-
-  quickball.addEventListener('mousedown', (e) => {
-    isDragging = false;
-    startX = e.clientX;
-    startY = e.clientY;
-    const rect = quickball.getBoundingClientRect();
-    initialX = e.clientX - rect.left;
-    initialY = e.clientY - rect.top;
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  });
-
-  function onMouseMove(e) {
-    if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
-      if (!isDragging) {
-        isDragging = true;
-        quickball.classList.add('cs-qb-dragging');
-        menu.classList.remove('cs-qb-menu-active');
-        quickball.classList.remove('cs-qb-menu-open');
-      }
-      let newX = e.clientX - initialX;
-      let newY = e.clientY - initialY;
-      newX = Math.max(0, Math.min(newX, window.innerWidth - quickball.offsetWidth));
-      newY = Math.max(0, Math.min(newY, window.innerHeight - quickball.offsetHeight));
-      quickball.style.left = `${newX}px`;
-      quickball.style.top = `${newY}px`;
-    }
-  }
-
-  function onMouseUp(e) {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-    if (isDragging) {
-      quickball.classList.remove('cs-qb-dragging');
-      snapToEdge();
-      chrome.storage.local.set({ qbPosition: { x: parseInt(quickball.style.left), y: parseInt(quickball.style.top) } });
-    } else {
-      toggleMenu();
-    }
-  }
-
-  function snapToEdge() {
-    const rect = quickball.getBoundingClientRect();
-    const centerX = rect.left + (rect.width / 2);
-    if (centerX < window.innerWidth / 2) {
-      quickball.style.left = '24px';
-    } else {
-      quickball.style.left = `${window.innerWidth - rect.width - 24}px`;
-    }
-  }
-
-  function toggleMenu() {
-    const rect = quickball.getBoundingClientRect();
-    const isShowing = menu.classList.contains('cs-qb-menu-active');
-    if (!isShowing) {
-      const centerX = rect.left + (rect.width / 2);
-      if (centerX < window.innerWidth / 2) {
-        menu.style.left = `${rect.right + 16}px`;
-      } else {
-        menu.style.left = `${rect.left - 320 - 16}px`;
-      }
-      const menuHeight = menu.offsetHeight || 600;
-      let menuTop = rect.top;
-      // Use window.innerHeight strictly so it doesn't overflow the viewport
-      if (menuTop + menuHeight > window.innerHeight - 24) {
-          menuTop = window.innerHeight - menuHeight - 24;
-      }
-      menuTop = Math.max(24, menuTop);
-      menu.style.top = `${menuTop}px`;
-      menu.classList.add('cs-qb-menu-active');
-      quickball.classList.add('cs-qb-menu-open');
-    } else {
-      menu.classList.remove('cs-qb-menu-active');
-      quickball.classList.remove('cs-qb-menu-open');
-    }
-  }
-
-  // 5. Close menu on outside click
-  document.addEventListener('mousedown', (e) => {
-    if (!quickball.contains(e.target) && !menu.contains(e.target)) {
-      menu.classList.remove('cs-qb-menu-active');
-      quickball.classList.remove('cs-qb-menu-open');
-    }
-  });
-
-  // ═══════════════════════════════════════════════════
-  //  ACTION HANDLERS
-  // ═══════════════════════════════════════════════════
-
-  // Dashboard
-  document.getElementById('cs-qb-btn-dashboard').addEventListener('click', () => {
-    window.open(getDashboardBaseUrl(), '_blank');
-    toggleMenu();
-  });
-
-  // Manual Page Scan
-  document.getElementById('cs-qb-btn-scan').addEventListener('click', () => {
-    const tier = document.getElementById('cs-tier-select').value;
-    chrome.runtime.sendMessage({ action: "manualScanFromQuickball", url: window.location.href, tier });
-    showInlineLoading();
-  });
-
-  // Protection Toggle
-  const protectBtn = document.getElementById('cs-qb-btn-protect');
-  chrome.storage.local.get(['safetySettings'], (result) => {
-    const isProtected = result.safetySettings ? result.safetySettings.blockHighRisk : true;
-    updateProtectButtonText(isProtected);
-  });
-  protectBtn.addEventListener('click', () => {
-    chrome.storage.local.get(['safetySettings'], (result) => {
-      const isProtected = result.safetySettings ? result.safetySettings.blockHighRisk : true;
-      const newState = !isProtected;
-      chrome.storage.local.set({ safetySettings: { blockHighRisk: newState } }, () => {
-        updateProtectButtonText(newState);
-      });
-    });
-  });
-  function updateProtectButtonText(isProtected) {
-    if (isProtected) {
-      protectBtn.innerHTML = `<span>🛡️</span> Pause Protection`;
-      protectBtn.style.color = '#E2E8F0';
-    } else {
-      protectBtn.innerHTML = `<span style="opacity:0.5">⏸️</span> Resume Protection`;
-      protectBtn.style.color = '#EF4444';
-    }
-  }
-
-  // ═══ TEXT/URL SCAN HANDLER ═══
-  document.getElementById('cs-scan-submit').addEventListener('click', () => {
-    const content = document.getElementById('cs-scan-input').value.trim();
-    if (!content) return;
-    const tier = document.getElementById('cs-tier-select').value;
-    const scanType = document.getElementById('cs-scan-type').value;
-    showInlineLoading();
-    addTimelineEvent(`Scanning ${scanType} input...`);
-    chrome.runtime.sendMessage({ action: "manualTextScan", content, scanType, tier });
-  });
-  document.getElementById('cs-scan-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') document.getElementById('cs-scan-submit').click();
-  });
-
-  // ═══ FILE UPLOAD HANDLER ═══
-  const uploadZone = document.getElementById('cs-upload-zone');
-  const fileInput = document.getElementById('cs-file-input');
-  const uploadPreview = document.getElementById('cs-upload-preview');
-  const uploadSubmit = document.getElementById('cs-upload-submit');
-  const uploadIcon = document.getElementById('cs-upload-icon');
-  const uploadHint = document.getElementById('cs-upload-hint');
-  let currentFileBase64 = null;
-  let currentFileName = null;
-
-  uploadZone.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    currentFileName = file.name;
-    document.getElementById('cs-upload-text').innerText = file.name;
-    
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      currentFileBase64 = dataUrl.split(',')[1];
-      
-      if (file.type.startsWith('image/')) {
-          uploadPreview.src = dataUrl;
-          uploadPreview.style.display = 'block';
-          uploadIcon.style.display = 'none';
-          uploadHint.style.display = 'none';
-      } else {
-          uploadPreview.style.display = 'none';
-          uploadIcon.style.display = 'block';
-          uploadIcon.innerText = '🎥';
-      }
-      uploadSubmit.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  });
-  
-  uploadSubmit.addEventListener('click', () => {
-      if (!currentFileBase64) return;
-      const tier = document.getElementById('cs-tier-select').value;
-      showInlineLoading();
-      addTimelineEvent(`Uploading ${currentFileName} for deepfake scan...`);
-      chrome.runtime.sendMessage({ action: "manualFileScan", fileData: currentFileBase64, fileName: currentFileName, tier });
-  });
-
-  // ═══ LIVE DETECTION TOGGLE ═══
-  const liveToggle = document.getElementById('cs-live-toggle');
-  chrome.storage.local.get(['safetySettings'], (result) => {
-    const isProtected = result.safetySettings ? result.safetySettings.blockHighRisk : true;
-    liveToggle.checked = isProtected;
-  });
-  liveToggle.addEventListener('change', () => {
-    const newState = liveToggle.checked;
-    chrome.storage.local.set({ safetySettings: { blockHighRisk: newState } }, () => {
-      updateProtectButtonText(newState);
-      addTimelineEvent(newState ? 'Live detection enabled' : 'Live detection paused');
-    });
-  });
-
-  // ═══ INLINE RESULTS CLOSE ═══
-  document.getElementById('cs-results-close').addEventListener('click', () => {
-    document.getElementById('cs-inline-results').style.display = 'none';
-  });
-
-  // AI Chat Handlers
-  const chatBtn = document.getElementById('cs-qb-btn-chat');
-  const aiPanel = document.getElementById('cybersentinel-ai-panel');
-  const chatInput = document.getElementById('cs-ai-input');
-  const chatSend = document.getElementById('cs-ai-send');
-  const chatHistory = document.getElementById('cs-ai-chat-history');
-
-  chatBtn.addEventListener('click', () => {
-    aiPanel.classList.toggle('cs-panel-active');
-  });
-
-  function appendChat(msg, isUser) {
-    const div = document.createElement('div');
-    div.className = isUser ? 'cs-msg-user' : 'cs-msg-ai';
-    div.innerText = msg;
-    chatHistory.appendChild(div);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-  }
-
-  chatSend.addEventListener('click', () => {
-    const text = chatInput.value.trim();
-    if (!text) return;
-    appendChat(text, true);
-    chatInput.value = '';
-    const typingDiv = document.createElement('div');
-    typingDiv.className = 'cs-msg-ai';
-    typingDiv.innerText = 'Thinking...';
-    chatHistory.appendChild(typingDiv);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-    chrome.runtime.sendMessage({ action: "askAiAssistant", query: text, url: window.location.href });
-  });
-
-  chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') chatSend.click();
-  });
-}
-
-// Inject the floating indicator immediately when the script runs
-injectQuickball();
+// Quickball mounted by quickball.js (loaded after this file)
 
 /* =========================================================
    UI STATE MANAGERS & EVENT HANDLERS
@@ -618,298 +235,67 @@ injectQuickball();
 // Keyboard Shortcut listener (Ctrl + Shift + S)
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
-    const qb = document.getElementById('cybersentinel-quickball');
-    if (qb) {
-      qb.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-    }
+    if (window.__csQbApi) window.__csQbApi.toggleMenu();
   }
 });
 
-/* =========================================================
-   INLINE RESULTS: Loading + Rendering
-   ========================================================= */
-
 function showInlineLoading() {
-  const panel = document.getElementById('cs-inline-results');
-  const loading = document.getElementById('cs-results-loading');
-  const body = document.getElementById('cs-results-body');
-  if (!panel) return;
-  panel.style.display = 'block';
-  loading.style.display = 'block';
-  body.style.display = 'none';
+  if (window.__csQbApi) window.__csQbApi.showInlineLoading();
 }
 
 function renderInlineResults(result) {
-  const panel = document.getElementById('cs-inline-results');
-  const loading = document.getElementById('cs-results-loading');
-  const body = document.getElementById('cs-results-body');
-  if (!panel) return;
-
-  panel.style.display = 'block';
-  loading.style.display = 'none';
-  body.style.display = 'block';
-
-  const isSafe = result.threat_level === 'Safe';
-  const isHigh = result.risk_score >= 80;
-  const riskColor = isSafe ? '#10B981' : isHigh ? '#EF4444' : '#F59E0B';
-  const confidence = result.confidence !== undefined ? Math.round(result.confidence * 100) : '--';
-
-  // KPI Cards
-  document.getElementById('cs-kpi-row').innerHTML = `
-    <div class="cs-kpi-card" style="border-color: ${riskColor}33;">
-      <div class="cs-kpi-value" style="color: ${riskColor};">${Number(result.risk_score) || 0}</div>
-      <div class="cs-kpi-label">Risk Score</div>
-    </div>
-    <div class="cs-kpi-card" style="border-color: ${riskColor}33;">
-      <div class="cs-kpi-value" style="color: ${riskColor};">${escapeHtml(result.threat_level)}</div>
-      <div class="cs-kpi-label">Threat Level</div>
-    </div>
-    <div class="cs-kpi-card">
-      <div class="cs-kpi-value">${escapeHtml(String(confidence))}%</div>
-      <div class="cs-kpi-label">Confidence</div>
-    </div>
-  `;
-
-  // Explanation
-  document.getElementById('cs-results-explanation').innerHTML = `
-    <div class="cs-results-type" style="color: ${riskColor};">${escapeHtml((result.threat_type || 'benign').replace('_', ' '))}</div>
-    <p>${escapeHtml(result.explanation || 'No detailed explanation available.')}</p>
-  `;
-
-  // Indicators
-  const indContainer = document.getElementById('cs-results-indicators');
-  if (result.indicators && result.indicators.length > 0) {
-    indContainer.innerHTML = result.indicators.map(i => `<span class="cs-ind-chip">🔸 ${escapeHtml(i)}</span>`).join('');
-    indContainer.style.display = 'flex';
-  } else {
-    indContainer.style.display = 'none';
-  }
-
-  // Actions
-  const actContainer = document.getElementById('cs-results-actions');
-  if (result.recommended_actions && result.recommended_actions.length > 0) {
-    actContainer.innerHTML = `<div class="cs-actions">${result.recommended_actions.map(a => `<div class="cs-act">✓ ${escapeHtml(a)}</div>`).join('')}</div>`;
-    actContainer.style.display = 'block';
-  } else {
-    actContainer.style.display = 'none';
-  }
-
-  // Advanced analysis (reuse existing rendering logic)
-  const advContainer = document.getElementById('cs-results-advanced');
-  if (result.advanced_analysis) {
-    renderAdvancedAnalysis(result, advContainer);
-  } else {
-    advContainer.innerHTML = '';
-  }
-
-  // View Full Report link
-  const fullLink = document.getElementById('cs-results-view-full');
-  fullLink.href = `${getDashboardBaseUrl()}/threats?id=${encodeURIComponent(result.id || '')}`;
+  if (window.__csQbApi) window.__csQbApi.renderInlineResults(result);
 }
 
 function renderAdvancedAnalysis(result, container) {
-  const adv = result.advanced_analysis;
-  let html = '';
-  
-  if (result.threat_type === 'phishing' && adv.indicators_of_compromise) {
-    html += `<div class="cs-adv-section"><div class="cs-adv-title">🚨 Threat Indicators</div><div class="cs-adv-pills">`;
-    adv.indicators_of_compromise.forEach(ioc => {
-      const sevColor = ioc.severity === 'Critical' ? '#EF4444' : ioc.severity === 'High' ? '#F97316' : '#EAB308';
-      html += `<span class="cs-adv-pill" style="border-color:${sevColor}55; color:${sevColor}"><strong style="color:#CBD5E1">${escapeHtml(ioc.type)}:</strong> ${escapeHtml(ioc.value)}</span>`;
-    });
-    html += `</div></div>`;
-    if (adv.mitigation_steps && adv.mitigation_steps.length > 0) {
-      html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">🛡️ Mitigation</div><ul class="cs-adv-list">`;
-      adv.mitigation_steps.forEach(step => html += `<li>${escapeHtml(step)}</li>`);
-      html += `</ul></div>`;
-    }
-  } else if (result.threat_type === 'deepfake' && adv.detected_artifacts) {
-    if (adv.detected_artifacts.length > 0) {
-      html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">❌ Synthetic Artifacts</div><ul class="cs-adv-list cs-adv-list-bad">`;
-      adv.detected_artifacts.forEach(art => html += `<li>${escapeHtml(art)}</li>`);
-      html += `</ul></div>`;
-    }
-    if (adv.authenticity_signals && adv.authenticity_signals.length > 0) {
-      html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">✅ Human Signals</div><ul class="cs-adv-list cs-adv-list-good">`;
-      adv.authenticity_signals.forEach(sig => html += `<li>${escapeHtml(sig)}</li>`);
-      html += `</ul></div>`;
-    }
-  } else if (result.threat_type === 'prompt_injection' && adv.malicious_payloads) {
-    html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">☠️ Payloads Blocked</div><div class="cs-adv-code-blocks">`;
-    adv.malicious_payloads.forEach(payload => html += `<div class="cs-adv-code-snippet">${escapeHtml(payload)}</div>`);
-    html += `</div></div>`;
-  }
-
-  container.innerHTML = html;
+  // Kept for legacy callers; Quickball renders results itself.
+  if (!container || !result?.advanced_analysis) return;
+  container.innerHTML = '';
 }
 
 function updateQuickballState(stateName) {
-  const quickball = document.getElementById('cybersentinel-quickball');
-  if (!quickball) return;
-  
-  if (stateName === 'Scanning...') {
-    quickball.className = 'quickball-scanning';
-    document.getElementById('cs-qb-radar').style.display = 'block';
-    addTimelineEvent('Scanning current page...');
-    document.getElementById('cs-qb-domain-badge').innerText = 'Scanning';
-    document.getElementById('cs-qb-domain-badge').style.color = '#38BDF8';
-    document.getElementById('cs-qb-domain-badge').style.background = 'rgba(56, 189, 248, 0.1)';
-    document.getElementById('cs-qb-domain-badge').style.borderColor = 'rgba(56, 189, 248, 0.3)';
-  }
+  if (window.__csQbApi) window.__csQbApi.updateQuickballState(stateName);
 }
 
 function updateQuickballWithResult(result) {
-  const quickball = document.getElementById('cybersentinel-quickball');
-  if (!quickball) return;
-  document.getElementById('cs-qb-radar').style.display = 'none';
+  if (!result) return;
+  if (window.__csQbApi) window.__csQbApi.updateQuickballWithResult(result);
 
   const isSafe = result.threat_level === 'Safe';
-  const isHighRisk = result.risk_score >= 80;
+  const isHighRisk = (result.risk_score || 0) >= 80;
+  const label = (result.threat_type || 'threat').replace(/_/g, ' ');
+  addTimelineEvent('Analysis complete: ' + label);
 
-  // Change Classes
-  if (isSafe) quickball.className = 'quickball-safe';
-  else if (isHighRisk) quickball.className = 'quickball-danger';
-  else quickball.className = 'quickball-warning';
-
-  // Update Status & Badge
-  document.getElementById('cs-qb-risk-status').innerText = result.threat_level;
-  document.getElementById('cs-qb-domain-badge').innerText = isSafe ? '✓ Verified' : '⚠ Action Required';
-  
-  const color = isSafe ? '#10B981' : isHighRisk ? '#EF4444' : '#F59E0B';
-  document.getElementById('cs-qb-domain-badge').style.color = color;
-  document.getElementById('cs-qb-domain-badge').style.background = `${color}22`;
-  document.getElementById('cs-qb-domain-badge').style.borderColor = `${color}55`;
-
-  // Update Score Meter
-  document.getElementById('cs-qb-score-text').innerText = `${100 - result.risk_score}%`;
-  document.getElementById('cs-qb-score-fill').style.width = `${100 - result.risk_score}%`;
-  
-  // Render Advanced Analysis JSON Payload (Tier 3)
-  const advContainer = document.getElementById('cs-advanced-analysis');
-  if (result.advanced_analysis) {
-      const adv = result.advanced_analysis;
-      let html = '';
-      
-      // Phishing Payload Rendering
-      if (result.threat_type === 'phishing' && adv.indicators_of_compromise) {
-          html += `<div class="cs-adv-section"><div class="cs-adv-title">🚨 Threat Indicators</div><div class="cs-adv-pills">`;
-          adv.indicators_of_compromise.forEach(ioc => {
-              const sevColor = ioc.severity === 'Critical' ? '#EF4444' : ioc.severity === 'High' ? '#F97316' : '#EAB308';
-              html += `<span class="cs-adv-pill" style="border-color:${sevColor}55; color:${sevColor}">
-                        <strong style="color:#CBD5E1">${escapeHtml(ioc.type)}:</strong> ${escapeHtml(ioc.value)}
-                       </span>`;
-          });
-          html += `</div></div>`;
-          
-          if (adv.mitigation_steps && adv.mitigation_steps.length > 0) {
-              html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">🛡️ Mitigation Commands</div><ul class="cs-adv-list">`;
-              adv.mitigation_steps.forEach(step => html += `<li>${escapeHtml(step)}</li>`);
-              html += `</ul></div>`;
-          }
-      }
-      // Deepfake Payload Rendering
-      else if (result.threat_type === 'deepfake' && adv.detected_artifacts) {
-          if (adv.detected_artifacts.length > 0) {
-              html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">❌ Synthetic Artifacts Found</div><ul class="cs-adv-list cs-adv-list-bad">`;
-              adv.detected_artifacts.forEach(art => html += `<li>${escapeHtml(art)}</li>`);
-              html += `</ul></div>`;
-          }
-          if (adv.authenticity_signals && adv.authenticity_signals.length > 0) {
-              html += `<div class="cs-adv-section mt-2"><div class="cs-adv-title" style="color:#10B981">✅ Human Signals Detected</div><ul class="cs-adv-list cs-adv-list-good">`;
-              adv.authenticity_signals.forEach(sig => html += `<li>${escapeHtml(sig)}</li>`);
-              html += `</ul></div>`;
-          }
-      }
-      // Prompt Injection Payload Rendering
-      else if (result.threat_type === 'prompt_injection' && adv.malicious_payloads) {
-          html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#EF4444">☠️ Malicious Payloads Blocked</div><div class="cs-adv-code-blocks">`;
-          adv.malicious_payloads.forEach(payload => {
-              html += `<div class="cs-adv-code-snippet">${escapeHtml(payload)}</div>`;
-          });
-          html += `</div></div>`;
-      }
-      
-      // Behavior Anomaly Payload Rendering
-      else if (result.threat_type === 'behavior_anomaly' && adv.anomalies_detected) {
-          html += `<div class="cs-adv-section"><div class="cs-adv-title" style="color:#F59E0B">⚠️ Baseline Deviations</div><ul class="cs-adv-list cs-adv-list-warn">`;
-          adv.anomalies_detected.forEach(anom => html += `<li>${escapeHtml(anom)}</li>`);
-          html += `</ul></div>`;
-      }
-      
-      if (html) {
-          advContainer.innerHTML = html;
-          advContainer.style.display = 'block';
-      } else {
-          advContainer.style.display = 'none';
-      }
-  } else {
-      advContainer.style.display = 'none';
-  }
-  
-  // Timeline
-  addTimelineEvent(`Analysis complete: ${result.threat_type.replace('_', ' ')}`);
-
-  addTimelineEvent(`Analysis complete: ${result.threat_type.replace('_', ' ')}`);
-
-  // Toast alert based on severity
   if (!isSafe) {
-    showToast('CyberSentinel AI Alert', `Detected ${result.threat_level} threat: ${result.explanation}`, isHighRisk ? 'error' : 'warning');
+    showToast('CyberSentinel AI Alert', 'Detected ' + (result.threat_level || '') + ' threat: ' + (result.explanation || ''), isHighRisk ? 'error' : 'warning');
   } else {
-    // Check if we recently showed a safe heartbeat
     const lastSafeAt = sessionStorage.getItem('cs-last-safe-toast');
     const now = Date.now();
-    if (!lastSafeAt || (now - parseInt(lastSafeAt)) > 30000) {
+    if (!lastSafeAt || (now - parseInt(lastSafeAt, 10)) > 30000) {
       showToast('Page Scanned — Safe', 'No critical threats detected.', 'success');
-      sessionStorage.setItem('cs-last-safe-toast', now.toString());
+      sessionStorage.setItem('cs-last-safe-toast', String(now));
     }
   }
 
-  // ═══ Populate Inline Results Panel ═══
   renderInlineResults(result);
 }
 
 function handleAiResponse(text) {
-  // Remove "Thinking..." node
-  const chatHistory = document.getElementById('cs-ai-chat-history');
-  if (!chatHistory) return;
-  
-  const thinkingNode = Array.from(chatHistory.children).find(n => n.innerText === 'Thinking...');
-  if (thinkingNode) thinkingNode.remove();
-
-  // Parse **bold** safely without injecting raw HTML (S5)
-  const div = document.createElement('div');
-  div.className = 'cs-msg-ai';
-  const parts = String(text || '').split(/(\*\*[^*]+\*\*)/g);
-  parts.forEach((part) => {
-    const m = part.match(/^\*\*([^*]+)\*\*$/);
-    if (m) {
-      const strong = document.createElement('strong');
-      strong.textContent = m[1];
-      div.appendChild(strong);
-    } else if (part) {
-      div.appendChild(document.createTextNode(part));
-    }
-  });
-  chatHistory.appendChild(div);
-  chatHistory.scrollTop = chatHistory.scrollHeight;
+  if (window.__csQbApi) {
+    window.__csQbApi.appendChatFromBg(String(text || ''));
+    return;
+  }
 }
 
 function addTimelineEvent(text) {
-  const timeline = document.getElementById('cs-soc-timeline');
-  if (!timeline) return;
-  
-  const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-  const div = document.createElement('div');
-  div.className = 'cs-soc-entry';
-  div.innerHTML = `<span class="cs-soc-time">${escapeHtml(time)}</span><span class="cs-soc-event">${escapeHtml(text)}</span>`;
-  timeline.prepend(div);
+  if (window.__csQbApi) window.__csQbApi.addTimelineEvent(text);
 }
 
 /* =========================================================
    REAL-TIME THREAT TOAST ALERTS
    ========================================================= */
 function showToast(title, message, type = 'warning') {
-  const container = document.getElementById('cybersentinel-toast-container');
+  const container = (window.__csQb && window.__csQb.toast) || document.getElementById('cybersentinel-toast-container');
   if (!container) return;
 
   const toast = document.createElement('div');
@@ -936,12 +322,12 @@ function showToast(title, message, type = 'warning') {
 
   container.appendChild(toast);
 
-  document.getElementById(detailsId).addEventListener('click', () => {
+  toast.querySelector('#' + detailsId)?.addEventListener('click', () => {
     window.open(getDashboardBaseUrl(), '_blank');
   });
 
   // Wire Ignore button to Smart Whitelist System
-  document.getElementById(ignoreId).addEventListener('click', () => {
+  toast.querySelector('#' + ignoreId)?.addEventListener('click', () => {
     chrome.storage.local.get(['smartWhitelist'], (res) => {
         const wl = res.smartWhitelist || [];
         if (!wl.includes(window.location.hostname)) {
@@ -993,29 +379,27 @@ function startDOMScanner() {
     setInterval(() => {
         if (!chrome.runtime || !chrome.runtime.id) return; // Stop if extension was reloaded
 
-        // Health Dot
-        const dot = document.querySelector('.cs-health-dot');
-        if(dot) {
+        // Health Dot + Adaptive Positioning (Shadow DOM Quickball)
+        const api = window.__csQb;
+        if (!api || !api.ball) return;
+        const qb = api.ball;
+        const dot = api.root.querySelector('.hd');
+        if (dot) {
             dot.style.background = '#38BDF8';
-            setTimeout(() => dot.style.background = '#10B981', 1000);
+            setTimeout(() => { dot.style.background = '#2dd4bf'; }, 1000);
         }
 
-        // Adaptive Positioning
-        const qb = document.getElementById('cybersentinel-quickball');
-        if (qb && !qb.classList.contains('cs-qb-dragging')) {
+        if (!qb.classList.contains('dragging')) {
             const rect = qb.getBoundingClientRect();
-            // Check if Quickball center overlaps an input/button
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
-            // Temporarily hide quickball to see what's underneath
-            qb.style.display = 'none'; 
+            qb.style.visibility = 'hidden';
             const elementHovered = document.elementFromPoint(centerX, centerY);
-            qb.style.display = 'flex';
-            
-            if (elementHovered && (elementHovered.tagName === 'INPUT' || elementHovered.tagName === 'BUTTON')) {
-               // Shift Quickball up slightly to get out of the way
-               let currentTop = parseInt(qb.style.top || rect.top);
-               qb.style.top = `${Math.max(0, currentTop - 60)}px`;
+            qb.style.visibility = 'visible';
+
+            if (elementHovered && (elementHovered.tagName === 'INPUT' || elementHovered.tagName === 'BUTTON' || elementHovered.tagName === 'TEXTAREA')) {
+               let currentTop = parseInt(qb.style.top || rect.top, 10);
+               qb.style.top = `${Math.max(20, currentTop - 60)}px`;
             }
         }
     }, 5000);
