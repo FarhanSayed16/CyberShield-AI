@@ -1,102 +1,116 @@
-import { useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import MenuIcon from '@mui/icons-material/Menu'
+import SearchIcon from '@mui/icons-material/Search'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
-import ShieldIcon from '@mui/icons-material/Shield'
-import { useUIStore } from '../../stores/useUIStore'
+import MenuIcon from '@mui/icons-material/Menu'
+import LogoutIcon from '@mui/icons-material/Logout'
+import { IconButton, Avatar, Tooltip } from '@mui/material'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 interface TopbarProps {
-  onMenuToggle: () => void
+  onMobileMenuToggle?: () => void
 }
 
-const pageInfo: Record<string, { title: string; desc: string }> = {
-  '/dashboard': { title: 'Live Scan Dashboard', desc: 'Analyze threats in real-time' },
-  '/threats': { title: 'Threat History', desc: 'Browse past threat detections' },
-  '/analytics': { title: 'Security Analytics', desc: 'Visualize threat intelligence data' },
-  '/email': { title: 'Email Scanner', desc: 'Analyze .eml messages for phishing' },
-  '/audit': { title: 'History Audit', desc: 'Scan recent browsing history via extension' },
-  '/rules': { title: 'Custom Rules', desc: 'Override AI scoring with deterministic logic' },
+const titles: Record<string, string> = {
+  '/dashboard': 'Live Scan',
+  '/threats': 'Threat History',
+  '/analytics': 'Analytics',
+  '/email': 'Email Scanner',
+  '/audit': 'History Audit',
+  '/rules': 'Custom Rules',
+  '/ai': 'AI Workplace Overview',
+  '/ai/events': 'AI Activity',
+  '/ai/alerts': 'Risk Alerts',
+  '/ai/users': 'Team Users',
+  '/ai/settings': 'Organization Settings',
+  '/ai/billing': 'Billing & plans',
+  '/admin/verify': 'Admin Verify',
 }
 
-function matchPageInfo(pathname: string) {
-  if (pageInfo[pathname]) return pageInfo[pathname]
-  if (pathname.startsWith('/threats')) {
-    return { title: 'Threat Comparison', desc: 'Diff two threat events side by side' }
-  }
-  return pageInfo['/dashboard']
-}
-
-export default function Topbar({ onMenuToggle }: TopbarProps) {
+export default function Topbar({ onMobileMenuToggle }: TopbarProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const info = matchPageInfo(location.pathname)
-  const {
-    systemStatus,
-    systemStatusDetail,
-    unreadHighRiskCount,
-    markAllRead,
-    pollHealth,
-  } = useUIStore()
-
-  useEffect(() => {
-    pollHealth()
-    const id = window.setInterval(() => {
-      pollHealth()
-    }, 20000)
-    return () => clearInterval(id)
-  }, [pollHealth])
-
-  const statusStyles =
-    systemStatus === 'active'
-      ? { wrap: 'bg-safe/10 border-safe/20', dot: 'bg-safe', text: 'text-safe', label: 'System Active' }
-      : systemStatus === 'degraded'
-        ? { wrap: 'bg-suspicious/10 border-suspicious/20', dot: 'bg-suspicious', text: 'text-suspicious', label: 'Degraded' }
-        : systemStatus === 'down'
-          ? { wrap: 'bg-high-risk/10 border-high-risk/20', dot: 'bg-high-risk', text: 'text-high-risk', label: 'Offline' }
-          : { wrap: 'bg-theme-surface border-theme-border', dot: 'bg-theme-text-secondary', text: 'text-theme-text-secondary', label: 'Checking…' }
+  const { user, logout } = useAuth()
+  const title = titles[location.pathname] || 'CyberSentinel'
 
   return (
-    <header className="h-16 bg-theme-card/40 backdrop-blur-xl border-b border-theme-border flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          aria-label="Toggle navigation"
-          onClick={onMenuToggle}
-          className="lg:hidden p-2 rounded-lg hover:bg-theme-secondary/10 transition-colors"
-        >
-          <MenuIcon sx={{ color: 'var(--color-text-secondary)' }} />
-        </button>
-        <div>
-          <h2 className="text-base font-semibold text-theme-primary">{info.title}</h2>
-          <p className="text-xs text-theme-secondary">{info.desc}</p>
-        </div>
-      </div>
+    <header className="h-20 border-b border-theme-border bg-theme-surface/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${statusStyles.wrap}`}
-          title={systemStatusDetail}
-        >
-          <div className={`w-2 h-2 rounded-full ${statusStyles.dot} ${systemStatus === 'active' ? 'animate-pulse' : ''}`} />
-          <span className={`text-xs font-medium ${statusStyles.text}`}>{statusStyles.label}</span>
+        {onMobileMenuToggle && (
+          <IconButton
+            onClick={onMobileMenuToggle}
+            className="!text-theme-text-secondary md:!hidden"
+            size="small"
+            aria-label="Open navigation menu"
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
+        <h1 className="text-xl font-bold text-theme-text tracking-tight">{title}</h1>
+      </div>
+
+      <div className="flex items-center gap-2 md:gap-4">
+        <div className="relative group hidden sm:block">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <SearchIcon className="text-theme-text-secondary group-focus-within:text-primary transition-colors" sx={{ fontSize: 18 }} />
+          </div>
+          <input
+            type="text"
+            placeholder="Search…"
+            aria-label="Search"
+            className="bg-theme-surface border border-theme-border text-theme-text text-sm rounded-full pl-10 pr-4 py-2 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all w-40 md:w-64 placeholder:text-theme-text-secondary/80"
+          />
         </div>
-        <button
-          type="button"
-          aria-label={unreadHighRiskCount > 0 ? `${unreadHighRiskCount} unread high-risk alerts` : 'Notifications'}
+
+        <IconButton
+          className="!text-theme-text-secondary hover:!text-theme-text hover:!bg-theme-border"
+          size="small"
+          aria-label="Risk alerts"
           onClick={() => {
-            markAllRead()
-            navigate('/threats')
+            if (user?.role === 'admin' || user?.role === 'manager') {
+              navigate('/ai/alerts')
+            } else {
+              navigate('/ai/events')
+            }
           }}
-          className="p-2 rounded-lg hover:bg-theme-secondary/10 transition-colors relative"
         >
-          <NotificationsNoneIcon sx={{ fontSize: 20, color: 'var(--color-text-secondary)' }} />
-          {unreadHighRiskCount > 0 && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-high-risk text-[10px] font-bold text-white flex items-center justify-center">
-              {unreadHighRiskCount > 9 ? '9+' : unreadHighRiskCount}
-            </span>
-          )}
-        </button>
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-teal-700 flex items-center justify-center">
-          <ShieldIcon sx={{ fontSize: 16, color: 'white' }} />
+          <NotificationsNoneIcon />
+        </IconButton>
+
+        <div className="h-8 w-[1px] bg-theme-border mx-1 hidden sm:block" />
+
+        <div className="flex items-center gap-3 pl-1">
+          <div className="text-right hidden md:block">
+            <p className="text-sm font-medium text-theme-text leading-none">
+              {user?.name || 'User'}
+            </p>
+            <p className="text-[10px] text-theme-text-secondary mt-1 uppercase tracking-wider font-bold">
+              {user?.role || 'member'} · {user?.org_name || 'Org'}
+            </p>
+          </div>
+          <Avatar
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: 'var(--color-primary)',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+            }}
+          >
+            {(user?.name || 'U').slice(0, 1).toUpperCase()}
+          </Avatar>
+          <Tooltip title="Sign out">
+            <IconButton
+              size="small"
+              aria-label="Sign out"
+              className="!text-theme-text-secondary hover:!text-theme-text"
+              onClick={() => {
+                logout()
+                navigate('/login')
+              }}
+            >
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </div>
       </div>
     </header>

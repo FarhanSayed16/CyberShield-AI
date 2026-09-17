@@ -26,13 +26,32 @@ export default function ScanResultCard() {
   )
   
   if (!result) return (
-    <div className="glass-card h-full flex flex-col items-center justify-center text-center relative overflow-hidden border border-theme-border min-h-[400px]">
-      <div className="relative z-10 flex flex-col items-center">
-        <div className="w-20 h-20 rounded-2xl bg-theme-surface border border-theme-border flex items-center justify-center mb-6 text-theme-text-secondary shadow-sm">
-          <SecurityIcon sx={{ fontSize: 40 }} />
+    <div className="glass-card h-full flex flex-col items-center justify-center text-center relative overflow-hidden border border-theme-border min-h-[400px] p-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.12),transparent_55%)]" />
+      <div className="relative z-10 flex flex-col items-center max-w-sm">
+        <div className="w-16 h-16 rounded-2xl bg-theme-surface border border-theme-border flex items-center justify-center mb-5 text-primary shadow-sm">
+          <SecurityIcon sx={{ fontSize: 34 }} />
         </div>
-        <h3 className="text-2xl font-display font-bold text-theme-text tracking-tight">Ready to Scan</h3>
-        <p className="text-sm mt-3 max-w-xs text-theme-text-secondary leading-relaxed">Enter a URL, email, or prompt on the left to analyze it for cyber threats.</p>
+        <h3 className="text-2xl font-display font-bold text-theme-text tracking-tight">Ready to scan</h3>
+        <p className="text-sm mt-3 text-theme-text-secondary leading-relaxed">
+          Pick a scan type on the left, paste content or try an example, then run <span className="text-theme-text font-medium">Scan Now</span>.
+        </p>
+        <ul className="mt-6 w-full text-left text-xs text-theme-text-secondary space-y-2">
+          {[
+            'URL — phishing & redirect traps',
+            'Email / Text — lure language & links',
+            'AI Prompt — injection / jailbreak patterns',
+            'Deepfake — image authenticity (optional ML)',
+          ].map((line) => (
+            <li
+              key={line}
+              className="flex items-start gap-2 rounded-lg border border-theme-border bg-theme-surface/50 px-3 py-2"
+            >
+              <span className="text-primary mt-0.5">•</span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   )

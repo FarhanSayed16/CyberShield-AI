@@ -4,11 +4,19 @@ import { useUIStore } from '../stores/useUIStore'
 import toast from 'react-hot-toast'
 
 const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/ws/threats'
-const API_KEY = import.meta.env.VITE_API_KEY || 'dev-key'
 
 function buildWsUrl(): string {
   const sep = WS_BASE.includes('?') ? '&' : '?'
-  return `${WS_BASE}${sep}api_key=${encodeURIComponent(API_KEY)}`
+  const jwt = localStorage.getItem('access_token')
+  if (jwt) {
+    return `${WS_BASE}${sep}token=${encodeURIComponent(jwt)}`
+  }
+  const apiKey = import.meta.env.VITE_API_KEY
+  if (apiKey) {
+    return `${WS_BASE}${sep}api_key=${encodeURIComponent(apiKey)}`
+  }
+  // No credentials — connection will be rejected; avoid hardcoding weak keys
+  return WS_BASE
 }
 
 /**
@@ -19,8 +27,8 @@ export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<number | null>(null)
   const reconnectDelay = useRef(1000)
-  const fetchThreats = useThreatsStore(state => state.fetchThreats)
-  const bumpUnreadHighRisk = useUIStore(state => state.bumpUnreadHighRisk)
+  const fetchThreats = useThreatsStore((state) => state.fetchThreats)
+  const bumpUnreadHighRisk = useUIStore((state) => state.bumpUnreadHighRisk)
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
@@ -42,15 +50,15 @@ export function useWebSocket() {
           if (payload.threat_level === 'High Risk') {
             bumpUnreadHighRisk()
           }
-          const icon = payload.threat_level === 'Safe' ? '✅' :
-                       payload.threat_level === 'High Risk' ? '🚨' : '⚠️'
+          const icon =
+            payload.threat_level === 'Safe' ? '✅' : payload.threat_level === 'High Risk' ? '🚨' : '⚠️'
           toast(`${icon} ${payload.threat_type}: ${payload.explanation?.substring(0, 80)}...`, {
             style: {
               background: 'rgb(var(--color-card))',
               color: 'rgb(var(--color-text-primary))',
               border: '1px solid rgb(var(--color-border))',
             },
-            duration: 5000
+            duration: 5000,
           })
         }
       } catch (e) {
