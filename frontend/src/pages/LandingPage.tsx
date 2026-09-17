@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { IconButton } from '@mui/material'
 import LightModeIcon from '@mui/icons-material/LightMode'
@@ -234,10 +234,17 @@ export default function LandingPage() {
             </IconButton>
             <button
               type="button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/login')}
               className="lp-btn lp-btn-ghost hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold"
             >
-              Open console
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/signup')}
+              className="lp-btn lp-btn-primary hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold"
+            >
+              Start free
               <span className="lp-btn-arrow inline-flex">
                 <ArrowForwardIcon sx={{ fontSize: 16 }} />
               </span>
@@ -274,34 +281,41 @@ export default function LandingPage() {
               transition={{ duration: 0.5, ease }}
               className="text-xl sm:text-2xl md:text-[1.75rem] font-semibold leading-snug text-theme-text max-w-md tracking-tight"
             >
-              Explainable threat analysis for every page you open.
+              AI workplace guard with explainable threat defense.
             </motion.h1>
             <motion.p
               variants={fadeUp}
               transition={{ duration: 0.5, ease }}
               className="lp-prose"
             >
-              Detect phishing, malicious URLs, prompt injection, and synthetic media with a multi-tier engine.
-              Every result includes the reasons behind the score and clear next steps—not a black-box alert.
+              Monitor ChatGPT, Claude, and Gemini for data risk—then explain phishing, malicious URLs, and prompt
+              injection with clear indicators. Built for startups (10–100 seats). Starter from ₹4,999 / $149 per month.
             </motion.p>
             <motion.div variants={fadeUp} transition={{ duration: 0.5, ease }} className="flex flex-col sm:flex-row gap-3 pt-1">
               <button
                 type="button"
-                onClick={handleDownload}
+                onClick={() => navigate('/signup')}
                 className="lp-btn lp-btn-primary inline-flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold"
               >
-                <DownloadIcon sx={{ fontSize: 18 }} />
-                Install extension
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard')}
-                className="lp-btn lp-btn-secondary inline-flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold"
-              >
-                Open console
+                Start free trial
                 <span className="lp-btn-arrow inline-flex">
                   <ArrowForwardIcon sx={{ fontSize: 16 }} />
                 </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="lp-btn lp-btn-secondary inline-flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold"
+              >
+                Sign in to console
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="lp-btn lp-btn-ghost inline-flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold"
+              >
+                <DownloadIcon sx={{ fontSize: 18 }} />
+                Install extension
               </button>
             </motion.div>
           </motion.div>
@@ -520,18 +534,18 @@ export default function LandingPage() {
               transition={{ duration: 0.45, ease }}
             >
               <p className="lp-label mb-3">Operator console</p>
-              <h2 className="lp-section-title">Same engine. Full history.</h2>
+              <h2 className="lp-section-title">AI activity and threat explain in one place.</h2>
               <p className="lp-prose mt-5">
-                The web console is your control plane for scans, audits, and policy.
-                It uses the same analyze API as the extension, so results stay consistent across surfaces.
+                Admins see AI usage, DLP alerts, and team invites alongside Live Scan and threat history.
+                One login, one org, one extension.
               </p>
             </motion.div>
             <button
               type="button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/login')}
               className="lp-btn lp-btn-ghost inline-flex items-center gap-2 self-start px-5 py-3.5 text-sm font-semibold"
             >
-              Enter dashboard
+              Sign in
               <span className="lp-btn-arrow inline-flex">
                 <ArrowForwardIcon sx={{ fontSize: 16 }} />
               </span>
@@ -629,27 +643,27 @@ export default function LandingPage() {
         >
           <div className="max-w-xl">
             <h2 className="lp-section-title">
-              Deploy locally or in the cloud
+              Protect AI workspaces starting today
             </h2>
             <p className="lp-prose mt-4">
-              Point the extension and dashboard at your FastAPI backend. Leave remote ML empty to run Gemini-only,
-              or attach your own inference URL when you are ready.
+              Create an org, invite your team, install the extension, and see the first AI event in minutes.
+              Starter pricing: ₹4,999 / $149 per month for up to 10 users.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <button
               type="button"
-              onClick={handleDownload}
+              onClick={() => navigate('/signup')}
               className="lp-btn lp-btn-primary inline-flex items-center justify-center px-5 py-3.5 text-sm font-semibold"
             >
-              Install extension
+              Create organization
             </button>
             <button
               type="button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/login')}
               className="lp-btn lp-btn-secondary inline-flex items-center justify-center px-5 py-3.5 text-sm font-semibold"
             >
-              Open console
+              Sign in
             </button>
           </div>
         </motion.div>
@@ -658,14 +672,16 @@ export default function LandingPage() {
       <footer className="py-12 bg-theme-bg">
         <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
-            <CyberSentinelLogo withWordmark size="md" variant="signal" tagline="Explainable personal cyber defense" />
+            <CyberSentinelLogo withWordmark size="md" variant="signal" tagline="AI Workplace Guard + Threat Explainer" />
           </div>
           <div className="flex flex-wrap gap-6 text-sm font-medium text-theme-text-secondary">
             <a href="#capabilities" className="lp-nav-link">Capabilities</a>
             <a href="#pipeline" className="lp-nav-link">Pipeline</a>
             <a href="#extension" className="lp-nav-link">Extension</a>
             <a href="#console" className="lp-nav-link">Console</a>
-            <a href="#team" className="lp-nav-link">Team</a>
+            <Link to="/privacy" className="lp-nav-link">Privacy</Link>
+            <Link to="/terms" className="lp-nav-link">Terms</Link>
+            <Link to="/install" className="lp-nav-link">Install</Link>
           </div>
           <p className="text-sm text-theme-text-secondary">© 2026 CyberSentinel</p>
         </div>
