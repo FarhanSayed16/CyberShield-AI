@@ -16,7 +16,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Topbar onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+        <Topbar onMobileMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto animate-fade-in">
             {children}
