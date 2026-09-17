@@ -389,10 +389,69 @@ h1, h2, h3, h4, h5, h6 {
   @apply bg-theme-text-secondary;
 }
 
-/* ===== Premium Cards ===== */
-.glass-card {
-  @apply bg-theme-card/50 backdrop-blur-md border border-theme-border rounded-xl shadow-md;
+/* ===== Operator console form controls (dark-mode safe) ===== */
+@layer components {
+  .cs-input {
+    @apply border border-theme-border rounded-lg px-3 py-2
+      bg-theme-surface text-theme-text
+      placeholder:text-theme-text-secondary/80
+      transition-colors duration-150;
+  }
+  .cs-input:focus {
+    @apply outline-none ring-1 ring-primary/45 border-primary/50;
+  }
+  .cs-input:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .cs-select {
+    @apply cs-input pr-8;
+    color-scheme: light;
+  }
+  .dark .cs-select {
+    color-scheme: dark;
+  }
+  .dark .cs-select option,
+  .dark .cs-select optgroup {
+    background-color: rgb(30 41 59);
+    color: rgb(248 250 252);
+  }
+
+  .cs-textarea {
+    @apply cs-input resize-y min-h-[6rem];
+  }
+
+  .cs-alert-warn {
+    @apply text-sm rounded-lg border px-3 py-2.5
+      bg-amber-500/10 text-amber-900 border-amber-500/30;
+  }
+  .dark .cs-alert-warn {
+    @apply text-amber-100 border-amber-400/35 bg-amber-400/10;
+  }
+
+  .cs-alert-error {
+    @apply text-sm rounded-lg border px-3 py-2.5
+      bg-red-500/10 text-red-900 border-red-500/30;
+  }
+  .dark .cs-alert-error {
+    @apply text-red-100 border-red-400/35 bg-red-400/10;
+  }
+
+  .cs-alert-ok {
+    @apply text-sm rounded-lg border px-3 py-2.5
+      bg-emerald-500/10 text-emerald-900 border-emerald-500/30;
+  }
+  .dark .cs-alert-ok {
+    @apply text-emerald-100 border-emerald-400/35 bg-emerald-400/10;
+  }
+
+  .cs-btn-ghost {
+    @apply text-sm border border-theme-border rounded-lg px-3 py-2
+      bg-theme-surface text-theme-text
+      hover:bg-theme-border/40 transition-colors;
+  }
 }
+
 
 .glass-panel {
   @apply bg-theme-surface/50 backdrop-blur-md border border-theme-border rounded-xl;
