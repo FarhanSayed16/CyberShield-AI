@@ -36,12 +36,12 @@ Get-NetTCPConnection -LocalPort 8000,5173 -ErrorAction SilentlyContinue | % { St
 
 ## P0 — Safety baseline
 
-- [ ] P0.1 Stop running API + Vite. Verify: `Get-NetTCPConnection -LocalPort 8000,5173` → empty.
-- [ ] P0.2 `git add Plan v1_plan_docs; git commit -m "docs: planning docs"`; `git tag baseline-2026-10-27`.
-- [ ] P0.3 Run backend tests → write pass/fail counts + failing test names to `Plan/BASELINE.md`.
-- [ ] P0.4 `npm run lint` + `npm run build` → record result in `Plan/BASELINE.md`.
-- [ ] P0.5 Manual smoke recorded: health ok · signup ok · login ok · Events page loads · extension Config saves · 1 ChatGPT prompt → 1 event.
-- [ ] **Gate P0** baseline recorded.
+- [x] P0.1 Stop running API + Vite. Verify: `Get-NetTCPConnection -LocalPort 8000,5173` → empty.
+- [x] P0.2 `git add Plan v1_plan_docs; git commit -m "docs: planning docs"`; `git tag baseline-2026-10-27`. (commit `5ab2339`)
+- [x] P0.3 Run backend tests → 48 passed, 0 failed (see `Plan/BASELINE.md`).
+- [x] P0.4 `npm run build` pass; `npm run lint` 14 errors / 3 warnings pre-existing (listed in `Plan/BASELINE.md`, fix in P8.2).
+- [~] P0.5 API smoke done (health, signup, login, ingest, dedupe, alert, policy cache). Browser checks pending human: Events page · extension Config · 1 ChatGPT prompt → 1 event.
+- [x] **Gate P0** baseline recorded.
 
 ## P1 — Truth + docs
 
