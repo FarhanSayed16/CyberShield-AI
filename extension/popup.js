@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const userTokenInput = document.getElementById('user-token-input');
   const dashboardUrlInput = document.getElementById('dashboard-url-input');
   const saveBtn = document.getElementById('save-config-btn');
+  const demoBtn = document.getElementById('use-demo-btn');
   const saveMsg = document.getElementById('save-msg');
   const openDashboardLink = document.getElementById('open-dashboard-link');
 
@@ -72,8 +73,21 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     setStatus(Boolean(config.apiBase && config.orgToken && config.userToken));
+    chrome.storage.local.get('cs_last_error', (stored) => {
+      const sub = document.getElementById('popup-status-subtext');
+      if (stored.cs_last_error && sub) sub.textContent = stored.cs_last_error;
+    });
     fetchLiveStats(config);
   });
+
+  if (demoBtn) {
+    demoBtn.addEventListener('click', () => {
+      apiBaseInput.value = 'http://localhost:8000';
+      orgTokenInput.value = 'aisnl_org_demo123';
+      userTokenInput.value = 'aisnl_usr_emp456';
+      dashboardUrlInput.value = 'http://localhost:5173';
+    });
+  }
 
   saveBtn.addEventListener('click', () => {
     const apiBase = apiBaseInput.value.trim().replace(/\/$/, '');
@@ -135,9 +149,9 @@ async function fetchLiveStats(config) {
     });
     if (response.ok) {
       const data = await response.json();
-      threatCount.textContent = `${data.total_threats ?? 0} threats logged`;
+      threatCount.textContent = `${data.total_threats ?? 0} threats logged · API ok ${new Date().toLocaleTimeString()}`;
     } else {
-      threatCount.textContent = 'API reachable — check tokens';
+      threatCount.textContent = `API reachable — check tokens · ${new Date().toLocaleTimeString()}`;
     }
   } catch (_err) {
     threatCount.textContent = 'Unable to reach API';

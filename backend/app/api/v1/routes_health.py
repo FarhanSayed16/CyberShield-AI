@@ -17,10 +17,14 @@ async def health_check():
     """Return backend health status."""
     db_ok = await check_db_connection()
     ml_remote = ml_remote_configured()
+    key = (settings.GEMINI_API_KEYS or "").strip()
+    gemini_configured = bool(key) and not key.lower().startswith("your-") and key.lower() not in {"changeme", "placeholder"}
     return {
         "status": "ok" if db_ok else "degraded",
         "db": "connected" if db_ok else "disconnected",
         "agents": "mock" if settings.USE_MOCK_AGENTS else "live",
+        "gemini_configured": gemini_configured,
+        "email_backend": (settings.EMAIL_BACKEND or "console").strip().lower(),
         "ml_remote": ml_remote,
         "pipeline_mode": "hybrid" if ml_remote else "gemini_only",
         "version": "1.0.0",

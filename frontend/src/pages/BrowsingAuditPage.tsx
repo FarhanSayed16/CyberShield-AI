@@ -12,8 +12,6 @@ interface AuditResult {
   indicators: string[]
 }
 
-const EXTENSION_ID = 'CyberSentinel_History_Audit'
-
 export default function BrowsingAuditPage() {
   const [isScanning, setIsScanning] = useState(false)
   const [results, setResults] = useState<AuditResult[]>([])

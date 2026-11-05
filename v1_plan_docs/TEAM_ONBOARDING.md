@@ -29,7 +29,7 @@ Or start API + frontend manually (see [README.md](../README.md)).
 
 ### 3. Extension (5 min)
 
-- [ ] `chrome://extensions` → Developer mode → Load unpacked → `aisentinel/extension`
+- [ ] `chrome://extensions` → Developer mode → Load unpacked → `extension`
 - [ ] Popup: API `http://localhost:8000`, org `aisnl_org_demo123`, user `aisnl_usr_admin123`
 - [ ] Send **one** short prompt on ChatGPT
 - [ ] Dashboard **Events**: exactly **one** new row; open it — activity log present

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Box, Typography, Paper, Button, Chip, LinearProgress, Alert } from '@mui/material'
+import { Box, Typography, Paper, Chip, LinearProgress, Alert } from '@mui/material'
 import { Email, Shield, Warning, CheckCircle, Error as ErrorIcon, UploadFile } from '@mui/icons-material'
 import AnimatedPage from '../components/common/AnimatedPage'
 import { analyzeEmail } from '../api/endpoints'

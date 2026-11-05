@@ -2,6 +2,7 @@ window.__CyberSentinel = window.__CyberSentinel || {};
 
 window.__CyberSentinel.showJitGate = function (options) {
   return new Promise((resolve) => {
+    const blockOnly = options.mode === 'block';
     const host = document.createElement('div');
     host.id = 'cybersentinel-jit-host';
     const shadow = host.attachShadow({ mode: 'closed' });
@@ -22,10 +23,10 @@ window.__CyberSentinel.showJitGate = function (options) {
         <div class="card" role="dialog" aria-modal="true">
           <h2>${options.title || 'Quick security check'}</h2>
           <p>${options.body || 'This prompt may include sensitive information.'}</p>
-          <label><input type="checkbox" id="jit-check" /> ${options.checkboxLabel || 'I confirm this use is approved'}</label>
+          ${blockOnly ? '' : `<label><input type="checkbox" id="jit-check" /> ${options.checkboxLabel || 'I confirm this use is approved'}</label>`}
           <div class="actions">
-            <button type="button" class="cancel" id="jit-cancel">Cancel</button>
-            <button type="button" class="continue" id="jit-ok" disabled>Continue</button>
+            <button type="button" class="cancel" id="jit-cancel">${blockOnly ? 'Close' : 'Cancel'}</button>
+            ${blockOnly ? '' : '<button type="button" class="continue" id="jit-ok" disabled>Send anyway</button>'}
           </div>
         </div>
       </div>
@@ -34,16 +35,20 @@ window.__CyberSentinel.showJitGate = function (options) {
     const check = shadow.getElementById('jit-check');
     const ok = shadow.getElementById('jit-ok');
     const cancel = shadow.getElementById('jit-cancel');
-    check.addEventListener('change', () => {
-      ok.disabled = !check.checked;
-    });
+    if (check && ok) {
+      check.addEventListener('change', () => {
+        ok.disabled = !check.checked;
+      });
+    }
     cancel.addEventListener('click', () => {
       host.remove();
       resolve({ acknowledged: false, cancelled: true });
     });
-    ok.addEventListener('click', () => {
-      host.remove();
-      resolve({ acknowledged: true, cancelled: false, justificationText: 'User attested via JIT gate' });
-    });
+    if (ok) {
+      ok.addEventListener('click', () => {
+        host.remove();
+        resolve({ acknowledged: true, cancelled: false, justificationText: 'User attested via JIT gate' });
+      });
+    }
   });
 };

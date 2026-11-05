@@ -1,6 +1,6 @@
 # Chrome extension
 
-Manifest V3 vanilla JS under `aisentinel/extension/`.
+Manifest V3 vanilla JS under `extension/`.
 
 ## Script roles
 
@@ -53,4 +53,4 @@ ChatGPT often clears the composer before click handlers read text. The extension
 
 ## Reload after pull
 
-Always **Reload** the unpacked extension after changing JS under `aisentinel/extension/`.
+Always **Reload** the unpacked extension after changing JS under `extension/`.

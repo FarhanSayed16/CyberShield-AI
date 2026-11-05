@@ -19,6 +19,9 @@
   let lastKnownPrompt = '';
   let submitInFlight = false;
   let documentListenersBound = false;
+  let cachedPolicy = { submit_mode: 'observe', block_threshold: 'critical', features: {} };
+  let pendingOutcome = null;
+  let bypassOnce = false;
   let stopResponseWatch = null;
   const SUBMIT_DEDUPE_MS = 8000;
   const activityLog = [];
@@ -170,7 +173,9 @@
         was_anonymized,
         clipboard_lineage,
         jit_decision,
+        enforcement_outcome: pendingOutcome,
       };
+      pendingOutcome = null;
 
       if (clientAudit) {
         payload.client_risk_score = clientAudit.client_risk_score;
@@ -241,9 +246,104 @@
     );
   }
 
+  const RISK_RANK = { none: 0, low: 1, medium: 2, high: 3, critical: 4 };
+
+  function refreshCachedPolicy() {
+    chrome.runtime.sendMessage({ type: 'GET_POLICY' }, (res) => {
+      if (res && res.policy) cachedPolicy = res.policy;
+    });
+  }
+  refreshCachedPolicy();
+  setInterval(refreshCachedPolicy, 20000);
+
+  function riskMeetsThreshold(level) {
+    const threshold = cachedPolicy.block_threshold === 'high' ? 'high' : 'critical';
+    return (RISK_RANK[level] || 0) >= RISK_RANK[threshold];
+  }
+
+  function composerFocused(target) {
+    const inp = findInput();
+    if (!inp || !target) return false;
+    return target === inp || inp.contains(target);
+  }
+
+  function nativeSend() {
+    const selectors = platformConfig.submitSelectors || [];
+    for (const sel of selectors) {
+      const btn = document.querySelector(sel);
+      if (btn) {
+        btn.click();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async function runSubmitGate(text, trigger) {
+    const mode = cachedPolicy.submit_mode || 'observe';
+    const audit = window.__CyberSentinel.runClientAudit
+      ? window.__CyberSentinel.runClientAudit(text)
+      : null;
+    const level = audit?.client_risk_level || 'none';
+    const reasons = (audit?.client_findings || []).map((f) => f.type).join(', ') || level;
+    if (mode === 'block') {
+      if (window.__CyberSentinel.showJitGate) {
+        await window.__CyberSentinel.showJitGate({
+          mode: 'block',
+          title: 'Prompt blocked',
+          body: `CyberSentinel stopped this prompt (${reasons}). It was not sent to the AI site.`,
+        });
+      }
+      pendingOutcome = 'blocked';
+      processAndSend(text, trigger || 'submit_blocked');
+      return;
+    }
+    const gate = window.__CyberSentinel.showJitGate
+      ? await window.__CyberSentinel.showJitGate({
+          title: 'Sensitive prompt',
+          body: `This prompt looks sensitive (${reasons}). Send it only if that is approved.`,
+          checkboxLabel: 'I confirm this use is approved for AI',
+        })
+      : { cancelled: true };
+    if (gate.cancelled) {
+      pendingOutcome = 'warned_cancelled';
+      processAndSend(text, trigger || 'submit_warned_cancel');
+      return;
+    }
+    pendingOutcome = 'warned_sent';
+    bypassOnce = true;
+    const clicked = nativeSend();
+    if (!clicked) pendingOutcome = null;
+    setTimeout(() => {
+      bypassOnce = false;
+    }, 10000);
+  }
+
+  function onSubmitCapture(e) {
+    if (bypassOnce) return;
+    const mode = cachedPolicy.submit_mode || 'observe';
+    if (mode === 'observe') return;
+    const isEnter = e.type === 'keydown' && e.key === 'Enter' && !e.shiftKey && !e.repeat && composerFocused(e.target);
+    const control = e.type === 'mousedown' ? e.target.closest && e.target.closest('button, input[type="submit"]') : null;
+    const isClick = Boolean(control && matchesSubmitControl(control));
+    if (!isEnter && !isClick) return;
+    const text = (captureDraft() || lastKnownPrompt || '').trim();
+    if (text.length < 2) return;
+    const audit = window.__CyberSentinel.runClientAudit
+      ? window.__CyberSentinel.runClientAudit(text)
+      : { client_risk_level: 'none' };
+    if (!riskMeetsThreshold(audit.client_risk_level)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    runSubmitGate(text, isEnter ? 'enter_submit' : 'submit_click');
+  }
+
   function setupDocumentListenersOnce() {
     if (documentListenersBound) return;
     documentListenersBound = true;
+
+    document.addEventListener('keydown', onSubmitCapture, true);
+    document.addEventListener('mousedown', onSubmitCapture, true);
 
     document.addEventListener(
       'mousedown',

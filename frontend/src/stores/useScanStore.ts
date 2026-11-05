@@ -39,7 +39,8 @@ export const useScanStore = create<ScanState>((set, get) => ({
   clearResult: () => set({ result: null, error: null }),
 
   submitScan: async () => {
-    let { scanType, content, selectedTier } = get()
+    const { content, selectedTier } = get()
+    let { scanType } = get()
     if (!content.trim()) {
       set({ error: 'Please enter content to scan' })
       toast.error('Please enter content to scan')
@@ -48,7 +49,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
     
     // Smart Input Detection: Auto-switch to 'text' if the user pasted a paragraph/sentence into the 'url' field
     if (scanType === 'url') {
-      const isLikelyUrl = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(content.trim()) && !content.includes(' ');
+      const isLikelyUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(content.trim()) && !content.includes(' ');
       if (!isLikelyUrl && content.length > 50 || content.includes(' ')) {
         scanType = 'text';
         set({ scanType: 'text' });

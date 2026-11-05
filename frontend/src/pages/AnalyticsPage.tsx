@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from 'react'
-import { Box, Typography, Chip, Button } from '@mui/material'
+import { Typography } from '@mui/material'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import AnimatedPage from '../components/common/AnimatedPage'
 import LoadingSpinner from '../components/common/LoadingSpinner'

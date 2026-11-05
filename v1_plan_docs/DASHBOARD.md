@@ -1,6 +1,6 @@
 # Admin dashboard
 
-React + Vite app: `aisentinel/frontend/`.
+React + Vite app: `frontend/`.
 
 ## Main pages
 

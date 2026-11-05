@@ -57,6 +57,20 @@ class Settings(BaseSettings):
     # Optional OpenAI key for /proxy (Growth; flag-gated usage)
     OPENAI_API_KEY: str = ""
 
+    # Demo org is created only for local in-memory development (see app.main lifespan).
+    SEED_DEMO: bool = True
+
+    # Email alerts. console logs the message; smtp sends via SMTP_*.
+    EMAIL_BACKEND: str = "console"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
+    SMTP_TLS: bool = True
+    DIGEST_ENABLED: bool = False
+    DIGEST_HOUR_UTC: int = 3
+
     class Config:
         env_file = ".env"
         extra = "ignore"

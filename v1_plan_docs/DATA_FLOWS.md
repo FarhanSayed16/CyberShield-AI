@@ -27,9 +27,9 @@ sequenceDiagram
 
 **Key files**
 
-- `aisentinel/extension/content.js` — capture + dedupe
-- `aisentinel/extension/background.js` — `POST /api/events`, offline queue
-- `aisentinel/backend/api/events.py` — ingest + `client_submit_id` lookup
+- `extension/ai-content.js` — capture + dedupe on AI hosts
+- `extension/background.js` — `POST /api/events`, offline queue
+- `backend/app/api/v1/routes_events.py` — ingest + `client_submit_id` lookup
 
 ---
 

@@ -43,13 +43,26 @@ Write-Host "See doc/LOCAL_DEV_MERGED.md" -ForegroundColor DarkGray
 $backend = Join-Path $Root "backend"
 $frontend = Join-Path $Root "frontend"
 
+$py = Join-Path $backend ".venv\Scripts\python.exe"
+if (-not (Test-Path $py)) {
+  Write-Host "Missing backend\.venv. Create it and pip install -r requirements.txt first." -ForegroundColor Red
+  exit 1
+}
+if (-not (Test-Path (Join-Path $frontend "node_modules"))) {
+  Write-Host "Installing frontend dependencies..." -ForegroundColor Yellow
+  Push-Location $frontend
+  npm install
+  Pop-Location
+}
 Start-Process powershell -ArgumentList @(
   "-NoExit", "-Command",
-  "Set-Location '$backend'; if (Test-Path .\.venv\Scripts\Activate.ps1) { .\.venv\Scripts\Activate.ps1 }; uvicorn app.main:app --reload --port 8000"
+  "Set-Location '$backend'; & '$py' -m uvicorn app.main:app --reload --port 8000"
 )
 Start-Process powershell -ArgumentList @(
   "-NoExit", "-Command",
   "Set-Location '$frontend'; npm run dev"
 )
+Write-Host "Demo login (memory mode): admin@demo.com / password" -ForegroundColor Green
+Write-Host "Extension: org aisnl_org_demo123  employee aisnl_usr_emp456" -ForegroundColor Green
 
 Write-Host "API http://localhost:8000/api/health  |  UI http://localhost:5173" -ForegroundColor Green

@@ -138,6 +138,17 @@ async def assert_seat_available(org: Organization) -> None:
 
 
 async def assert_event_quota(org: Organization) -> None:
+    if effective_plan(org) == "expired":
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": {
+                    "code": "PLAN_EXPIRED",
+                    "message": "This organization's plan has expired. Upgrade to keep recording AI activity.",
+                    "upgrade_url": "/ai/billing",
+                }
+            },
+        )
     limits = plan_limits(org)
     used = await count_events_today(org.id)
     if used >= int(limits["events_per_day"]):

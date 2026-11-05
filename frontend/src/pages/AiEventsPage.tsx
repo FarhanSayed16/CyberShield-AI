@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import client from '../api/client';
+import { useLiveStore } from '../stores/useLiveStore';
 
 const RISK_STYLES = {
   none: 'bg-theme-surface text-theme-text-secondary border border-theme-border',
@@ -40,6 +41,9 @@ export default function Events() {
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const wsOpen = useLiveStore((s) => s.wsOpen);
+  const liveRevision = useLiveStore((s) => s.revision);
+  const liveEvents = useLiveStore((s) => s.events);
 
   const load = () =>
     client
@@ -53,9 +57,23 @@ export default function Events() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 8000);
+    const t = setInterval(load, wsOpen ? 30000 : 8000);
     return () => clearInterval(t);
-  }, []);
+  }, [wsOpen]);
+
+  useEffect(() => {
+    if (!liveEvents.length) return;
+    setEvents((prev) => {
+      const map = new Map(prev.map((row) => [row.id, row]));
+      liveEvents.forEach((row) => map.set(row.id, { ...map.get(row.id), ...row }));
+      return Array.from(map.values()).sort(
+        (a, b) => new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime()
+      );
+    });
+    setLoading(false);
+    // revision is the signal; liveEvents is read from the store at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveRevision]);
 
   const openDetail = async (id) => {
     const { data } = await client.get(`/api/events/${id}`);
@@ -130,6 +148,15 @@ export default function Events() {
                 </td>
                 <td className="p-3">
                   <RiskBadge level={e.risk_level || 'none'} score={e.risk_score} />
+                  {e.enforcement_outcome === 'blocked' && (
+                    <span className="ml-2 px-2 py-0.5 rounded text-xs bg-red-500/15 text-red-700">Blocked</span>
+                  )}
+                  {e.enforcement_outcome === 'warned_sent' && (
+                    <span className="ml-2 px-2 py-0.5 rounded text-xs bg-amber-500/15 text-amber-800">Warned, sent</span>
+                  )}
+                  {e.enforcement_outcome === 'warned_cancelled' && (
+                    <span className="ml-2 px-2 py-0.5 rounded text-xs bg-theme-surface">Warned, cancelled</span>
+                  )}
                 </td>
               </tr>
             ))}

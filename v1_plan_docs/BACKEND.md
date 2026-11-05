@@ -1,6 +1,6 @@
 # Backend
 
-FastAPI app: `aisentinel/backend/main.py`.
+FastAPI app: `backend/app/main.py`.
 
 ## Router map
 
@@ -38,14 +38,14 @@ flowchart LR
 | `STORAGE_BACKEND` | Behavior |
 |-------------------|----------|
 | `memory` (default local) | mongomock; seed demo org/users; data lost on restart |
-| `mongodb` | Real Mongo via `MONGODB_URL` |
+| `mongodb` | Real Mongo via `MONGODB_URI` |
 
-Models: `aisentinel/backend/models/documents.py` — `Organization`, `User`, `Event`, `Alert`, `DLPFinding`, `EnforcementAction`, …
+Models: `backend/app/db/documents_org.py` — `Organization`, `User`, `Event`, `Alert`, `DLPFinding`, `EnforcementAction`, …
 
 ## DLP
 
-`services/dlp.py` — regex / heuristics / intent rules → `risk_level`, `risk_reasons`, findings.  
-`services/hybrid_dlp.py` — merge optional client audit + lineage labels.
+`backend/app/services/dlp.py` — regex / heuristics / intent rules → `risk_level`, `risk_reasons`, findings.  
+`backend/app/services/hybrid_dlp.py` — merge optional client audit + lineage labels.
 
 ## Event fields teammates care about
 

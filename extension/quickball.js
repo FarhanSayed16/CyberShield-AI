@@ -492,9 +492,9 @@ button, input, select, summary { font: inherit; }
         <div class="upload" id="upload-zone">
           <span id="upload-icon">⬆</span>
           <img class="preview" id="upload-preview" alt="">
-          <span id="upload-text">Drop image or video</span>
-          <span class="hint" id="upload-hint">png · jpg · jpeg · mp4</span>
-          <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.mp4" style="display:none">
+          <span id="upload-text">Drop an image</span>
+          <span class="hint" id="upload-hint">png · jpg · jpeg · image checks only</span>
+          <input type="file" id="file-input" accept=".png,.jpg,.jpeg,image/*" style="display:none">
         </div>
         <button type="button" class="btn primary" id="upload-submit" style="display:none">Analyze media →</button>
       </div>

@@ -1,6 +1,6 @@
 # Architecture
 
-Product code lives under `aisentinel/`. This GitHub repo is named **aiextinct**.
+Product code lives at the repo root: `backend/`, `frontend/`, `extension/`.
 
 ## Components
 

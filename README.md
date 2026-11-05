@@ -34,7 +34,7 @@
 | :--- | :--- |
 | 🔗 **Phishing & Malicious URLs** | Lookalike domains, credential harvest patterns, urgency language |
 | 🧠 **Prompt Injection** | Jailbreaks, system-prompt leaks, embedded payloads |
-| 🎭 **Deepfake / Synthetic Media** | Image authenticity signals and visual artifacts |
+| 🎭 **Deepfake / Synthetic Media** | Image authenticity signals only. Video analysis is not included |
 | 📧 **Email & Message Threats** | Domain mismatch, suspicious phrases, embedded malicious links |
 
 ---

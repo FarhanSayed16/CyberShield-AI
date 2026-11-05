@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Button } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useThreatsStore } from '../stores/useThreatsStore'
 import ThreatTable from '../features/threats/ThreatTable'

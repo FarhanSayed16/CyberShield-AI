@@ -3,6 +3,7 @@ CyberSentinel AI — FastAPI Application
 Main entry point with CORS, router registration, and DB lifecycle.
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 
 import uuid
@@ -71,7 +72,25 @@ async def lifespan(app: FastAPI):
 
     await init_db()
     await ai_manager.initialize()
+    digest_task = None
+    try:
+        storage = (settings.STORAGE_BACKEND or "").strip().lower()
+        if settings.SEED_DEMO and storage == "memory" and env == "development":
+            from app.scripts.seed_ai_demo import seed_ai_events
+            from app.scripts.seed_org import seed
+
+            await seed()
+            n = await seed_ai_events()
+            logger.info(f"Demo seed ready (new AI events: {n})")
+    except Exception as exc:
+        logger.warning(f"Demo seed skipped: {exc}")
+    if settings.DIGEST_ENABLED:
+        from app.services.notifier import digest_loop
+
+        digest_task = asyncio.create_task(digest_loop())
     yield
+    if digest_task:
+        digest_task.cancel()
     await close_db()
 
 
