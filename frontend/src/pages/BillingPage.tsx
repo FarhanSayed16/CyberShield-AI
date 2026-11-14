@@ -89,6 +89,11 @@ export default function BillingPage() {
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold mb-2">Billing & plans</h1>
+      {status.billing_mode === 'dev' && (
+        <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900">
+          Dev mode: Stripe is not configured. Activate Starter here only updates this local organization.
+        </div>
+      )}
       <p className="text-theme-text-secondary text-sm mb-6">
         Starter is ₹4,999 / $149 per month (up to 10 users). Trial is 14 days.
       </p>

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Test
+        env:
+          STORAGE_BACKEND: memory
+          SEED_DEMO: "false"
+          USE_MOCK_AGENTS: "true"
+          ENVIRONMENT: development
+          EMAIL_BACKEND: console
+        run: python -m pytest -q tests
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Manifest is valid JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('extension/manifest.json','utf8'))"
+      - name: Zip extension
+        run: |
+          mkdir -p dist
+          cd extension && zip -r ../dist/cybersentinel-extension.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cybersentinel-extension
+          path: dist/cybersentinel-extension.zip

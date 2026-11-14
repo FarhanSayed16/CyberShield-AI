@@ -49,6 +49,7 @@ async def summary(
             "critical_alerts": critical,
             "active_users": active_users,
             "unique_platforms": unique_platforms,
+            "prompts_blocked": sum(1 for e in events if e.enforcement_outcome == "blocked"),
         },
         "change_vs_prev_period": {"prompts_pct": 0, "flagged_pct": 0},
     }

@@ -7,6 +7,9 @@ window.__CyberSentinel.runClientAudit = function (text) {
 
   const rules = [
     { re: /\bsk-[a-zA-Z0-9]{20,}\b/, type: 'API_KEY', severity: 'CRITICAL', score: 90 },
+    { re: /\bAKIA[0-9A-Z]{16}\b/, type: 'AWS_KEY', severity: 'CRITICAL', score: 90 },
+    { re: /\bghp_[a-zA-Z0-9]{36}\b/, type: 'GITHUB_TOKEN', severity: 'CRITICAL', score: 90 },
+    { re: /\b(password|passwd|api[_\s]?key|secret)\s*[:=]\s*\S+/i, type: 'SECRET', severity: 'CRITICAL', score: 90 },
     { re: /\b(employee|staff)\s+id\b/i, type: 'INSIDER_THREAT', severity: 'HIGH', score: 65 },
     { re: /\baccess\s+(my\s+)?(boss|manager|admin)\b/i, type: 'INSIDER_THREAT', severity: 'HIGH', score: 65 },
     { re: /\b(manipulate|bypass|unauthorized)\b/i, type: 'INSIDER_THREAT', severity: 'HIGH', score: 65 },

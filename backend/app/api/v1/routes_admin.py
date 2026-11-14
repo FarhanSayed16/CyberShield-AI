@@ -114,3 +114,19 @@ async def dlp_run(_: User = Depends(require_admin)):
             "risk_reasons": scan.risk_reasons,
         })
     return {"results": results}
+
+
+@router.post("/digest/send-now")
+async def digest_send_now(admin: User = Depends(require_admin)):
+    """Send (or log) today's digest to the org alert email and return the preview."""
+    from app.services.notifier import build_digest, digest_text, send_email
+
+    org = await Organization.get(admin.org_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    preview = await build_digest(org)
+    to = ((org.settings or {}).get("alert_email") or "").strip()
+    sent = False
+    if to:
+        sent = await send_email(to, f"CyberSentinel digest — {org.name}", digest_text(preview))
+    return {"preview": preview, "to": to or None, "sent": sent, "email_backend": settings.EMAIL_BACKEND}

@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
 
   const loadManager = () => {
     setLoading(true);
@@ -74,9 +75,15 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    client.get('/api/health').then((r) => setDemoMode(r.data?.gemini_configured === false)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
     if (isManager) loadManager();
     else loadEmployee();
+    // loaders are recreated each render; user id and role are the real inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.role]);
 
   if (loading) return <p className="text-theme-text-secondary">Loading…</p>;
@@ -103,6 +110,7 @@ export default function Dashboard() {
         { label: 'Active users', value: summary.active_users },
         { label: 'Flagged', value: summary.flagged },
         { label: 'Critical alerts', value: summary.critical_alerts },
+        { label: 'Prompts blocked (7d)', value: summary.prompts_blocked ?? 0 },
       ]
     : [
         { label: 'My prompts', value: summary.prompts },
@@ -113,6 +121,11 @@ export default function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">Overview</h1>
+      {demoMode && (
+        <p className="mb-4 inline-block rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs text-amber-800">
+          Explanations are in demo mode until a Gemini API key is set.
+        </p>
+      )}
       <div className="mb-6 rounded-lg border border-theme-border bg-theme-surface/60 px-4 py-3 text-sm text-theme-text-secondary">
         {isManager ? (
           <>

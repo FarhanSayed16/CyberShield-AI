@@ -19,6 +19,7 @@ import PaymentsIcon from '@mui/icons-material/Payments'
 import ForumIcon from '@mui/icons-material/Forum'
 import { IconButton } from '@mui/material'
 import { useUIStore } from '../../stores/useUIStore'
+import { useLiveStore } from '../../stores/useLiveStore'
 import { useAuth } from '../../context/AuthContext'
 import CyberSentinelLogo from '../brand/CyberSentinelLogo'
 
@@ -57,6 +58,7 @@ const aiNav: NavItem[] = [
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { themeMode, toggleTheme, systemStatus, systemStatusDetail, pollHealth } = useUIStore()
   const { user } = useAuth()
+  const wsOpen = useLiveStore((s) => s.wsOpen)
 
   useEffect(() => {
     pollHealth()
@@ -173,7 +175,10 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <span className={`text-[10px] font-bold tracking-widest uppercase ${statusUi.text}`}>
                 {statusUi.label}
               </span>
-              <span className="text-[11px] text-theme-text-secondary truncate">{systemStatusDetail}</span>
+              <span className="text-[11px] text-theme-text-secondary truncate">
+                {systemStatusDetail}
+                {wsOpen ? ' · Live' : ''}
+              </span>
             </div>
           </div>
         )}

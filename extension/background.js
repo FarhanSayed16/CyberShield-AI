@@ -127,7 +127,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   chrome.alarms.create('policyRefresh', { periodInMinutes: 15 });
   chrome.alarms.create('ingestRetry', { periodInMinutes: 1 });
-  chrome.alarms.create('enforcementPoll', { periodInMinutes: 1 });
+  chrome.alarms.create('enforcementPoll', { periodInMinutes: 0.5 });
   getApiConfig().then((cfg) => {
     if (cfg.orgToken && cfg.apiOrigin) fetchPolicy(cfg.apiOrigin, cfg.orgToken);
   });
@@ -141,6 +141,40 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
   if (alarm.name === 'ingestRetry') flushQueue();
   if (alarm.name === 'enforcementPoll') pollEnforcement();
+});
+
+chrome.alarms.create('enforcementPoll', { periodInMinutes: 0.5 });
+
+const AI_HOSTS = ['chatgpt.com', 'chat.openai.com', 'www.chatgpt.com', 'claude.ai', 'gemini.google.com'];
+let lastEnforcementPollAt = 0;
+
+function hostIsAi(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    return AI_HOSTS.some((d) => hostname === d || hostname.endsWith('.' + d));
+  } catch (_e) {
+    return false;
+  }
+}
+
+function pollEnforcementSoon() {
+  const now = Date.now();
+  if (now - lastEnforcementPollAt < 5000) return;
+  lastEnforcementPollAt = now;
+  pollEnforcement();
+}
+
+chrome.tabs.onActivated.addListener(() => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0] && hostIsAi(tabs[0].url || '')) pollEnforcementSoon();
+  });
+});
+
+chrome.windows.onFocusChanged.addListener((windowId) => {
+  if (windowId === chrome.windows.WINDOW_ID_NONE) return;
+  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+    if (tabs[0] && hostIsAi(tabs[0].url || '')) pollEnforcementSoon();
+  });
 });
 
 // Handle Context Menu clicks
@@ -192,6 +226,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const config = { apiBase: data.apiOrigin, orgToken: data.orgToken };
       const result = await postEvent(config, payload);
       if (!result.ok) {
+        const errBody = result.body && result.body.detail && result.body.detail.error;
+        const errMessage = (errBody && errBody.message) || '';
+        if (result.status === 402 || result.status === 429) {
+          await chrome.storage.local.set({
+            cs_last_error: errMessage || 'Plan limit reached. Open billing in the dashboard.',
+          });
+          sendResponse({ ok: false, reason: 'quota', message: errMessage });
+          return;
+        }
         const { cs_ingest_queue = [] } = await chrome.storage.local.get('cs_ingest_queue');
         const sid = payload.client_submit_id;
         const alreadyQueued = sid && cs_ingest_queue.some((q) => q.payload?.client_submit_id === sid);

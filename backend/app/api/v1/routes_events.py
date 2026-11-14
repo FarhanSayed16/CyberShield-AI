@@ -88,6 +88,7 @@ async def _ingest_event(org: Organization, user: User, body: EventIngestRequest)
         clipboard_lineage=lineage_dict,
         jit_decision=jit_dict,
         client_submit_id=body.client_submit_id,
+        enforcement_outcome=body.enforcement_outcome,
         captured_at=body.captured_at,
     )
     await event.insert()
@@ -104,6 +105,15 @@ async def _ingest_event(org: Organization, user: User, body: EventIngestRequest)
         ).insert()
 
     alert = await create_alert_for_event(event, user)
+    try:
+        from app.api.v1.routes_ws import ws_manager
+
+        await ws_manager.broadcast(
+            {"type": "ai_event", "data": event_list_item(event, user)},
+            org_id=str(org.id),
+        )
+    except Exception:
+        pass
     return {
         "event_id": str(event.id),
         "status": event.status,
@@ -250,6 +260,15 @@ async def update_event_response(
             e.status = "flagged"
 
     await e.save()
+    try:
+        from app.api.v1.routes_ws import ws_manager
+
+        await ws_manager.broadcast(
+            {"type": "ai_event_update", "data": event_list_item(e, user)},
+            org_id=str(org.id),
+        )
+    except Exception:
+        pass
     return {
         "event_id": str(e.id),
         "response_risk_level": scan.risk_level,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useHotkeys } from 'react-hotkeys-hook'
+import toast from 'react-hot-toast'
 import { useScanStore } from '../../stores/useScanStore'
 import { getHealth } from '../../api/endpoints'
 import LinkIcon from '@mui/icons-material/Link'
@@ -76,12 +77,8 @@ export default function ScanForm() {
 
       const reader = new FileReader()
       if (file.type.startsWith('video/')) {
-        setType('video')
-        setFileName(file.name)
-        reader.onload = (e) => {
-          if (e.target?.result) setContent(e.target.result.toString())
-        }
-        reader.readAsDataURL(file)
+        toast.error('Video analysis is not available. Upload an image.')
+        return
       } else if (file.type.startsWith('image/')) {
         setType('image')
         setFileName(file.name)
@@ -199,7 +196,7 @@ export default function ScanForm() {
             <div className="p-4 rounded-xl bg-theme-card border border-theme-border mb-3">
               <ImageIcon fontSize="large" className="text-primary" />
             </div>
-            <p className="font-medium text-theme-text">Upload image or video</p>
+            <p className="font-medium text-theme-text">Upload an image</p>
             <p className="text-xs mt-1 font-mono text-theme-text-secondary">PNG, JPG, MP4 · max 10MB</p>
             {content && (
               <p className="text-primary mt-3 text-sm font-semibold truncate max-w-[80%] px-3 py-1 bg-primary/10 rounded-full border border-primary/20">

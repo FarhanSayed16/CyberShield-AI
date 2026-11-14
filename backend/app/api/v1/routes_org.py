@@ -21,13 +21,28 @@ DEFAULT_FEATURES = {
 }
 
 
+_SUBMIT_MODES = {"observe", "warn", "block"}
+_BLOCK_THRESHOLDS = {"high", "critical"}
+
+
 def _policy_bundle(org: Organization) -> dict:
     s = org.settings or {}
+    submit_mode = s.get("submit_mode", "observe")
+    if submit_mode not in _SUBMIT_MODES:
+        submit_mode = "observe"
+    block_threshold = s.get("block_threshold", "critical")
+    if block_threshold not in _BLOCK_THRESHOLDS:
+        block_threshold = "critical"
     return {
         "policy_version": s.get("policy_version", "pol_v1"),
         "dlp_sensitivity": s.get("dlp_sensitivity", "medium"),
         "jit_mode": s.get("jit_mode", "off"),
         "anonymize_mode": s.get("anonymize_mode", "off"),
+        "submit_mode": submit_mode,
+        "block_threshold": block_threshold,
+        "alert_email": s.get("alert_email") or "",
+        "notify_on_critical": bool(s.get("notify_on_critical", True)),
+        "daily_digest": bool(s.get("daily_digest", False)),
         "shadow_ai_threshold": s.get("shadow_ai_threshold", 65),
         "sensitive_domains": s.get("sensitive_domains", []),
         "ai_allowlist": s.get("ai_allowlist", []),
@@ -89,6 +104,20 @@ async def update_policies(body: OrgPoliciesUpdate, admin: User = Depends(require
         settings["sensitive_domains"] = body.sensitive_domains
     if body.ai_allowlist is not None:
         settings["ai_allowlist"] = body.ai_allowlist
+    if body.submit_mode is not None:
+        if body.submit_mode not in _SUBMIT_MODES:
+            raise HTTPException(status_code=400, detail={"error": {"code": "VALIDATION_ERROR", "message": "submit_mode must be observe, warn, or block"}})
+        settings["submit_mode"] = body.submit_mode
+    if body.block_threshold is not None:
+        if body.block_threshold not in _BLOCK_THRESHOLDS:
+            raise HTTPException(status_code=400, detail={"error": {"code": "VALIDATION_ERROR", "message": "block_threshold must be high or critical"}})
+        settings["block_threshold"] = body.block_threshold
+    if body.alert_email is not None:
+        settings["alert_email"] = body.alert_email.strip()
+    if body.notify_on_critical is not None:
+        settings["notify_on_critical"] = body.notify_on_critical
+    if body.daily_digest is not None:
+        settings["daily_digest"] = body.daily_digest
     settings["policy_version"] = f"pol_{int(datetime.utcnow().timestamp())}"
     org.settings = settings
     org.updated_at = datetime.utcnow()

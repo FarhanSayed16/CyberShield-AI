@@ -225,8 +225,13 @@ async def stripe_webhook(request: Request):
         logger.warning(f"Stripe webhook verify failed: {exc}")
         raise HTTPException(status_code=400, detail="Invalid webhook") from exc
 
-    etype = event.get("type") if isinstance(event, dict) else event["type"]
-    data = event.get("data", {}).get("object", {}) if isinstance(event, dict) else event["data"]["object"]
+    if hasattr(event, "to_dict"):
+        event = event.to_dict()
+    etype = event.get("type")
+    event_id = event.get("id")
+    data = (event.get("data") or {}).get("object") or {}
+    if hasattr(data, "to_dict"):
+        data = data.to_dict()
 
     org_id = None
     if isinstance(data, dict):
@@ -252,6 +257,16 @@ async def stripe_webhook(request: Request):
     if not org:
         return {"received": True, "handled": False}
 
+    seen = list((org.settings or {}).get("stripe_event_ids") or [])
+    if event_id and event_id in seen:
+        return {"received": True, "handled": False, "duplicate": True}
+
+    def _remember() -> None:
+        if not event_id:
+            return
+        seen.append(event_id)
+        org.settings = {**(org.settings or {}), "stripe_event_ids": seen[-50:]}
+
     if etype in ("checkout.session.completed", "customer.subscription.created", "customer.subscription.updated"):
         status = data.get("status") if isinstance(data, dict) else None
         if etype == "checkout.session.completed" or status in (None, "active", "trialing"):
@@ -263,6 +278,7 @@ async def stripe_webhook(request: Request):
                 if data.get("customer"):
                     org.stripe_customer_id = data["customer"]
             org.updated_at = datetime.now(timezone.utc)
+            _remember()
             await org.save()
             logger.info(f"Stripe activated starter for org={org.id}")
             return {"received": True, "handled": True, "plan": "starter"}
@@ -271,6 +287,7 @@ async def stripe_webhook(request: Request):
         org.plan = "expired"
         org.stripe_subscription_id = None
         org.updated_at = datetime.now(timezone.utc)
+        _remember()
         await org.save()
         logger.info(f"Stripe deactivated org={org.id}")
         return {"received": True, "handled": True, "plan": "expired"}

@@ -75,6 +75,7 @@ class EventIngestRequest(BaseModel):
     clipboard_lineage: Optional[ClipboardLineagePayload] = None
     jit_decision: Optional[JitDecisionPayload] = None
     client_submit_id: Optional[str] = None
+    enforcement_outcome: Optional[str] = None
 
 
 class EventResponseUpdate(BaseModel):
@@ -121,3 +122,8 @@ class OrgPoliciesUpdate(BaseModel):
     features: Optional[dict[str, bool]] = None
     sensitive_domains: Optional[list[dict[str, Any]]] = None
     ai_allowlist: Optional[list[str]] = None
+    submit_mode: Optional[str] = None
+    block_threshold: Optional[str] = None
+    alert_email: Optional[str] = None
+    notify_on_critical: Optional[bool] = None
+    daily_digest: Optional[bool] = None

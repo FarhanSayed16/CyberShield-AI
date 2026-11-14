@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useThreatsStore } from '../stores/useThreatsStore'
 import { useUIStore } from '../stores/useUIStore'
+import { useLiveStore } from '../stores/useLiveStore'
 import toast from 'react-hot-toast'
 
 const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/api/ws/threats'
@@ -29,6 +30,9 @@ export function useWebSocket() {
   const reconnectDelay = useRef(1000)
   const fetchThreats = useThreatsStore((state) => state.fetchThreats)
   const bumpUnreadHighRisk = useUIStore((state) => state.bumpUnreadHighRisk)
+  const setWsOpen = useLiveStore((state) => state.setWsOpen)
+  const pushEvent = useLiveStore((state) => state.pushEvent)
+  const pushAlert = useLiveStore((state) => state.pushAlert)
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
@@ -39,11 +43,25 @@ export function useWebSocket() {
     ws.onopen = () => {
       console.log('[WS] Connected to CyberSentinel live feed')
       reconnectDelay.current = 1000
+      setWsOpen(true)
     }
 
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data)
+        if (msg.type === 'ai_event' || msg.type === 'ai_event_update') {
+          if (msg.data?.id) pushEvent(msg.data)
+          return
+        }
+        if (msg.type === 'ai_alert') {
+          if (msg.data?.id) {
+            pushAlert(msg.data)
+            if (msg.data.severity === 'HIGH' || msg.data.severity === 'CRITICAL') {
+              toast(`${msg.data.severity}: ${msg.data.title || 'Risk alert'}`, { duration: 5000 })
+            }
+          }
+          return
+        }
         if (msg.type === 'new_threat') {
           const { payload } = msg
           fetchThreats(true)
@@ -67,6 +85,7 @@ export function useWebSocket() {
     }
 
     ws.onclose = () => {
+      setWsOpen(false)
       console.log('[WS] Disconnected. Reconnecting...')
       scheduleReconnect()
     }
@@ -74,7 +93,9 @@ export function useWebSocket() {
     ws.onerror = () => {
       ws.close()
     }
-  }, [fetchThreats, bumpUnreadHighRisk])
+    // scheduleReconnect is created from connect; listing it here would cycle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchThreats, bumpUnreadHighRisk, setWsOpen, pushEvent, pushAlert])
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimer.current) return

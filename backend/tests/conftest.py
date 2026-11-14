@@ -7,6 +7,9 @@ from __future__ import annotations
 import os
 
 os.environ["STORAGE_BACKEND"] = "memory"
+os.environ["SEED_DEMO"] = "false"
+os.environ["EMAIL_BACKEND"] = "console"
+os.environ["DIGEST_ENABLED"] = "false"
 os.environ["USE_MOCK_AGENTS"] = "true"
 os.environ["ENVIRONMENT"] = "development"
 os.environ["JWT_SECRET"] = "phase6-test-secret-min-32-characters-xx"

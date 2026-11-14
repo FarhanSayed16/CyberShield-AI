@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
+import { useLiveStore } from '../stores/useLiveStore';
 
 export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
@@ -9,12 +10,25 @@ export default function Alerts() {
   const [ackTarget, setAckTarget] = useState(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
+  const liveRevision = useLiveStore((s) => s.revision);
+  const liveAlerts = useLiveStore((s) => s.alerts);
 
   const load = () => client.get('/api/alerts').then((r) => setAlerts(r.data.alerts));
 
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!liveAlerts.length) return;
+    setAlerts((prev) => {
+      const map = new Map(prev.map((row) => [row.id, row]));
+      liveAlerts.forEach((row) => map.set(row.id, { ...map.get(row.id), ...row }));
+      return Array.from(map.values());
+    });
+    // revision is the signal; liveAlerts is read from the store at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveRevision]);
 
   const showToast = (text, ok = true) => {
     setToast({ text, ok });
@@ -30,7 +44,7 @@ export default function Alerts() {
       setAckTarget(null);
       await load();
       if (enforcementAction === 'close_ai_tabs') {
-        showToast('Alert acknowledged. Close-tab command queued for the employee extension (runs within ~1 min).');
+        showToast('Alert acknowledged. Close-tab command queued (the extension checks within 30 seconds, or sooner when an AI tab is focused).');
       } else if (enforcementAction === 'blackout_screen') {
         showToast('Alert acknowledged. Blackout command queued for the employee AI tabs.');
       } else {

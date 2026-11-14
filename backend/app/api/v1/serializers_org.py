@@ -71,6 +71,7 @@ def event_list_item(e: Event, user: User | None, *, reveal_prompt: bool = False)
         "clipboard_lineage": e.clipboard_lineage,
         "jit_decision": e.jit_decision,
         "has_jit_decision": bool(e.jit_decision and e.jit_decision.get("triggered")),
+        "enforcement_outcome": e.enforcement_outcome,
         "response_risk_level": e.response_risk_level,
         "response_risk_reasons": e.response_risk_reasons or [],
         "response_scanned_at": e.response_scanned_at.isoformat() if e.response_scanned_at else None,

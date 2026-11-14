@@ -54,6 +54,11 @@ export default function Settings() {
       jit_mode: policies.jit_mode,
       anonymize_mode: policies.anonymize_mode,
       features: policies.features,
+      submit_mode: policies.submit_mode || 'observe',
+      block_threshold: policies.block_threshold || 'critical',
+      alert_email: policies.alert_email || '',
+      notify_on_critical: policies.notify_on_critical !== false,
+      daily_digest: !!policies.daily_digest,
     });
     setMsg('Policies saved');
     load();
@@ -141,6 +146,71 @@ export default function Settings() {
                 <option value="high">High</option>
               </select>
             </label>
+            <label className="block">
+              <span className="text-theme-text-secondary">AI submit mode</span>
+              <select
+                className="cs-select mt-1.5 w-full"
+                value={policies.submit_mode || 'observe'}
+                onChange={(e) => setPolicies((p) => ({ ...p, submit_mode: e.target.value }))}
+              >
+                <option value="observe">Observe (record only)</option>
+                <option value="warn">Warn before sending risky prompts</option>
+                <option value="block">Block risky prompts</option>
+              </select>
+              <span className="text-xs text-theme-text-secondary">Default is observe, which does not stop the AI site.</span>
+            </label>
+            <label className="block">
+              <span className="text-theme-text-secondary">Block or warn when risk is at least</span>
+              <select
+                className="cs-select mt-1.5 w-full"
+                value={policies.block_threshold || 'critical'}
+                onChange={(e) => setPolicies((p) => ({ ...p, block_threshold: e.target.value }))}
+              >
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-theme-text-secondary">Alert email</span>
+              <input
+                className="cs-input mt-1.5 w-full"
+                value={policies.alert_email || ''}
+                onChange={(e) => setPolicies((p) => ({ ...p, alert_email: e.target.value }))}
+                placeholder="admin@company.com"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="accent-primary"
+                checked={policies.notify_on_critical !== false}
+                onChange={(e) => setPolicies((p) => ({ ...p, notify_on_critical: e.target.checked }))}
+              />
+              Email on high and critical alerts
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="accent-primary"
+                checked={!!policies.daily_digest}
+                onChange={(e) => setPolicies((p) => ({ ...p, daily_digest: e.target.checked }))}
+              />
+              Daily digest
+            </label>
+            <button
+              type="button"
+              className="text-sm text-primary underline"
+              onClick={async () => {
+                try {
+                  const { data } = await client.post('/api/admin/digest/send-now');
+                  setMsg(data.sent ? `Test email sent to ${data.to}` : 'Digest preview ready. Set an alert email to send it.');
+                } catch (e) {
+                  setErr(e.response?.data?.detail || 'Could not send test email');
+                }
+              }}
+            >
+              Send test email
+            </button>
             <label className="block">
               <span className="text-theme-text-secondary">JIT mode</span>
               <select

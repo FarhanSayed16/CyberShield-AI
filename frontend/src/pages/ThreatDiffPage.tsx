@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Box, Typography, Paper, Chip, IconButton, Button } from '@mui/material'
+import { Box, Typography, Paper, Chip, IconButton } from '@mui/material'
 import { CompareArrows, ArrowBack, TrendingUp, TrendingDown, Error as ErrorIcon, CheckCircle, Warning } from '@mui/icons-material'
 import AnimatedPage from '../components/common/AnimatedPage'
 import LoadingSpinner from '../components/common/LoadingSpinner'

@@ -86,6 +86,7 @@ class Event(Document):
     clipboard_lineage: Optional[dict[str, Any]] = None
     jit_decision: Optional[dict[str, Any]] = None
     client_submit_id: Optional[str] = None
+    enforcement_outcome: Optional[str] = None
     captured_at: datetime
     processed_at: datetime = Field(default_factory=_utc_now)
     created_at: datetime = Field(default_factory=_utc_now)
